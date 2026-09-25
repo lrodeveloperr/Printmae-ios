@@ -1,4 +1,5 @@
 arguments:
   - test
+  - --disable-get-task-allow-entitlement
 executable: /usr/bin/swift
 testSuiteTimeout: 180

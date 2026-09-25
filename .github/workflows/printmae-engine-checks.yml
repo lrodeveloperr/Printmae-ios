@@ -7,6 +7,15 @@ on:
       - 'Engine/**'
       - '.github/workflows/printmae-engine-checks.yml'
   workflow_dispatch:
+    inputs:
+      skip_fuzz:
+        description: 'Skip the 30-minute parser fuzz jobs (for fast iteration on the other jobs)'
+        type: boolean
+        default: false
+      skip_mutation:
+        description: 'Skip the mutation-score job (for fast iteration on the other jobs)'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -47,6 +56,7 @@ jobs:
   parser-fuzz:
     name: 30-minute ${{ matrix.parser }} fuzz session
     needs: native-package
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.skip_fuzz != true }}
     runs-on: macos-26
     timeout-minutes: 70
     strategy:
@@ -64,6 +74,7 @@ jobs:
   mutation-score:
     name: Critical-module mutation score
     needs: native-package
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.skip_mutation != true }}
     runs-on: macos-26
     timeout-minutes: 180
     steps:
@@ -90,3 +101,34 @@ jobs:
           name: printmae-mutation-report
           path: Engine/mutation-report.txt
           if-no-files-found: ignore
+
+  device-budgets:
+    name: iPhone 16e memory and performance budgets
+    needs: native-package
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      # The default Xcode on this runner image ships an iOS runtime whose
+      # smallest simulator device is "iPhone 17e" — "iPhone 16e" (what the
+      # tests gate on and what the product's performance budget references)
+      # only exists in the iOS 26.2 runtime, bundled with Xcode 26.2/26.3.
+      - name: Select Xcode 26.2 (ships the iPhone 16e simulator runtime)
+        run: sudo xcode-select -s /Applications/Xcode_26.2.app
+
+      - name: Report simulator toolchain
+        run: |
+          xcodebuild -version
+          xcrun simctl list devices available | grep -A2 "iOS 26.2" || true
+
+      - name: Run memory and performance budget tests on iPhone 16e
+        working-directory: Engine
+        run: |
+          xcodebuild test \
+            -scheme PrintMaeEngine-Package \
+            -destination 'platform=iOS Simulator,name=iPhone 16e,OS=26.2' \
+            -only-testing:PrintMaeEngineTests/MemoryBudgetTests \
+            -only-testing:PrintMaeEngineTests/PerformanceBudgetTests \
+            CODE_SIGNING_ALLOWED=NO
