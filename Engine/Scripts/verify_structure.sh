@@ -63,11 +63,14 @@ test_methods="$(awk '/func test/ { count++ } END { print count + 0 }' Tests/Prin
 [[ "$swift_files" -ge 15 ]] && pass "Swift source inventory ($swift_files files)" || fail "Swift source inventory"
 [[ "$test_methods" -ge 20 ]] && pass "automated test inventory ($test_methods tests)" || fail "automated test inventory"
 
-dimensions="$(identify -format '%wx%h %[channels]' AppIcon.appiconset/AppIcon-1024.png)"
-colors="$(identify -format '%k' AppIcon.appiconset/AppIcon-1024.png)"
-[[ "$dimensions" == 1024x1024* && "$dimensions" != *a ]] \
-  && pass "icon is 1024px and opaque ($dimensions)" || fail "icon mechanics ($dimensions)"
-[[ "$colors" -le 4 ]] && pass "icon has restrained flat palette ($colors colors)" || fail "icon palette ($colors colors)"
+if icon_report="$(python3 Scripts/verify_icon.py AppIcon.appiconset/AppIcon-1024.png)"; then
+  IFS=$'\t' read -r dimensions colors opaque <<<"$icon_report"
+  [[ "$dimensions" == 1024x1024 && "$opaque" == true ]] \
+    && pass "icon is 1024px and opaque ($dimensions)" || fail "icon mechanics ($icon_report)"
+  [[ "$colors" -le 4 ]] && pass "icon has restrained flat palette ($colors colors)" || fail "icon palette ($colors colors)"
+else
+  fail "icon PNG validation"
+fi
 
 for requirement in REQ-IN-001 REQ-CHECK-004 REQ-FIX-003 REQ-OUT-002 REQ-DATA-001 REQ-PAY-002; do
   grep -q "$requirement" Docs/Canonical_Product_Contract.md || fail "contract missing $requirement"
