@@ -1,0 +1,45 @@
+name: PrintMae Engine Checks
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'Engine/**'
+      - '.github/workflows/printmae-engine-checks.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-package:
+    name: Native Swift package and harness
+    runs-on: macos-26
+    timeout-minutes: 60
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Report Apple toolchain
+        run: |
+          swift --version
+          xcodebuild -version
+
+      - name: Run structural gate
+        working-directory: Engine
+        run: bash Scripts/verify_structure.sh
+
+      - name: Build and run XCTest
+        working-directory: Engine
+        run: swift test -Xswiftc -warnings-as-errors
+
+      - name: Run end-to-end plain harness
+        working-directory: Engine
+        run: swift run printmae-harness scenario
+
+      - name: Run deterministic engine sentinels
+        working-directory: Engine
+        run: |
+          swift run printmae-harness geometry-property 100000
+          swift run printmae-harness entitlement-sim
+          swift run printmae-harness state-matrix
