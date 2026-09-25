@@ -130,8 +130,10 @@ struct PrintMaeHarness {
         }
     }
 
-    static func runParserFuzz(target: ParserFuzzTarget, duration: TimeInterval, seed: UInt64) throws {
-        guard duration > 0 else { throw AppError(.invalidGeometry, retryable: false) }
+    private static func runParserFuzz(target: ParserFuzzTarget, duration: TimeInterval, seed: UInt64) throws {
+        guard duration.isFinite, duration > 0, duration <= 86_400 else {
+            throw AppError(.invalidGeometry, retryable: false)
+        }
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("PrintMaeFuzz-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
@@ -147,9 +149,9 @@ struct PrintMaeHarness {
         var generator = LCG(seed: seed)
         var iterations: UInt64 = 0
         var accepted: UInt64 = 0
-        let start = Date()
-        let deadline = start.addingTimeInterval(duration)
-        while Date() < deadline {
+        let start = DispatchTime.now().uptimeNanoseconds
+        let deadline = start &+ UInt64(duration * 1_000_000_000)
+        while DispatchTime.now().uptimeNanoseconds < deadline {
             let seedIndex = min(corpus.count - 1, Int(generator.next(in: 0 ... Double(corpus.count - 1))))
             let input = mutate(corpus[seedIndex], generator: &generator)
             iterations += 1
@@ -164,7 +166,8 @@ struct PrintMaeHarness {
             }
         }
         guard iterations > 0 else { throw AppError(.corruptPDF, retryable: false) }
-        print("FUZZ PASS parser=\(target.rawValue) seconds=\(Int(Date().timeIntervalSince(start))) iterations=\(iterations) accepted=\(accepted) seed=\(seed)")
+        let elapsed = Int((DispatchTime.now().uptimeNanoseconds - start) / 1_000_000_000)
+        print("FUZZ PASS parser=\(target.rawValue) seconds=\(elapsed) iterations=\(iterations) accepted=\(accepted) seed=\(seed)")
     }
 
     private static func mutate(_ source: Data, generator: inout LCG) -> Data {
@@ -229,7 +232,7 @@ private enum ParserFuzzTarget: String {
         switch self {
         case .pdfKit:
             guard let document = PDFDocument(data: data), document.pageCount > 0 else { return false }
-            for index in Set([0, document.pageCount / 2, document.pageCount - 1]) {
+            for index in Set([0, document.pageCount / 2, document.pageCount - 1]).sorted() {
                 guard let page = document.page(at: index) else { return false }
                 _ = page.bounds(for: .mediaBox)
                 _ = page.annotations.count
@@ -238,7 +241,7 @@ private enum ParserFuzzTarget: String {
         case .cgPDF:
             guard let provider = CGDataProvider(data: data as CFData),
                   let document = CGPDFDocument(provider), document.numberOfPages > 0 else { return false }
-            for index in Set([1, max(1, document.numberOfPages / 2), document.numberOfPages]) {
+            for index in Set([1, max(1, document.numberOfPages / 2), document.numberOfPages]).sorted() {
                 guard let page = document.page(at: index) else { return false }
                 _ = page.getBoxRect(.mediaBox)
                 _ = page.getBoxRect(.cropBox)
