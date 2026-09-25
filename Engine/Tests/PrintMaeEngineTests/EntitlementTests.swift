@@ -51,7 +51,8 @@ final class EntitlementTests: XCTestCase {
         let firstRequest = ExportRequestKey(jobID: UUID(), recipeRevision: 1)
         let firstAuth = try await firstLedger.authoriseExport(request: firstRequest)
         try await firstLedger.commitVerifiedExport(firstAuth)
-        XCTAssertEqual((await firstLedger.snapshot()).freeExportsRemaining, 2)
+        let afterFirstCommit = await firstLedger.snapshot()
+        XCTAssertEqual(afterFirstCommit.freeExportsRemaining, 2)
 
         // A relaunch far past the retention window must still behave correctly, and its next
         // ledger write should evict the now-stale authorisation record rather than keep it forever.
@@ -61,7 +62,8 @@ final class EntitlementTests: XCTestCase {
             request: ExportRequestKey(jobID: UUID(), recipeRevision: 2)
         )
         try await relaunched.commitVerifiedExport(secondAuth)
-        XCTAssertEqual((await relaunched.snapshot()).freeExportsRemaining, 1)
+        let afterSecondCommit = await relaunched.snapshot()
+        XCTAssertEqual(afterSecondCommit.freeExportsRemaining, 1)
 
         // Re-authorising the original request after it has aged out of the ledger is a brand
         // new authorisation, not a resurrection of the pruned one, and it is still bound by the
