@@ -33,6 +33,7 @@ canonical_contract:
   app_name_ja: "プリント前｜コンビニ印刷PDFチェック"
   app_name_ja_character_count: 19
   internal_english_name: "PrintMae"
+  bundle_identifier: "com.worksbien.printmae"
   core_promise_ja: "コンビニで印刷する前に、PDFの失敗原因を見つけて整える。"
   core_promise_en: "Find and repair likely PDF print problems before going to the convenience store."
   platform: iOS
@@ -1001,6 +1002,7 @@ If verification fails, the UI must never expose the output share action.
 
 ```yaml
 storekit:
+  app_bundle_id: "com.worksbien.printmae"
   product_id: "com.worksbien.printmae.pro.lifetime"
   type: non_consumable
   reference_name: "PrintMae Pro Lifetime"
