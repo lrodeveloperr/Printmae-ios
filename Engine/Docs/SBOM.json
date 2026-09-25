@@ -1,0 +1,20 @@
+{
+  "bomFormat" : "CycloneDX",
+  "components" : [],
+  "dependencies" : [],
+  "metadata" : {
+    "component" : {
+      "name" : "PrintMaeEngine",
+      "type" : "library",
+      "version" : "0.1.0-provisional"
+    },
+    "properties" : [
+      { "name" : "printmae.thirdPartyDependencies", "value" : "none" },
+      { "name" : "printmae.appleFrameworks", "value" : "Foundation,CoreGraphics,CoreImage,ImageIO,PDFKit,Security,StoreKit,UniformTypeIdentifiers" },
+      { "name" : "printmae.hostRescanRequired", "value" : "true" }
+    ],
+    "timestamp" : "2026-09-25T00:00:00Z"
+  },
+  "specVersion" : "1.5",
+  "version" : 1
+}

@@ -1,0 +1,50 @@
+{
+  "candidate" : {
+    "contractVersion" : "2026-09-25.1",
+    "name" : "PrintMaeEngine",
+    "status" : "PROVISIONAL_NATIVE_TOOLCHAIN_AND_INDEPENDENT_REVIEW_PENDING",
+    "version" : "0.1.0-provisional"
+  },
+  "contents" : {
+    "fileCountExcludingThisManifest" : 48,
+    "sourceTreeHashAlgorithm" : "sha256(sorted sha256sum records; CANDIDATE_MANIFEST.json excluded)",
+    "sourceTreeHash" : "1289447c9d2f2353692ef2f6378ed6d4dacc9258c7f966a9430c051ceff1cdf2"
+  },
+  "criticalHashes" : {
+    "appIcon1024" : "034071b387175498a811b95951b5b9e4c061b72a0b248b51e2888fadbf76b430",
+    "canonicalContract" : "e1df42dc14e0d5cf3dc1b049ce48a44daa2f60ff2210666985cabfd589666364",
+    "profileHashManifest" : "349ca8a395ce67ecde0a57d97ae4a0bacbeea7ca987921e9ab9bbe41fd991f86",
+    "structuralGateResults" : "226a3753373e40d6e50aeb2a9993b32ca8d52b7eee24c3491de78c0a122e00c0",
+    "structuralGateScript" : "63a85bb7b8bd9722576a5fcf17805fbb5777559f08c09fb1aa1d96ed4284cbf1"
+  },
+  "fixturesAndSeeds" : {
+    "clockSpanDays" : 3650,
+    "geometrySequences" : 10000,
+    "jobVolume" : 10000,
+    "parserFuzzMinutesPerParser" : 30,
+    "randomSeed" : 250925,
+    "undoRedoSequences" : 10000
+  },
+  "gates" : {
+    "independentCodeBreaker" : "BLOCKED_NOT_RUN",
+    "independentCustomerEvaluator" : "BLOCKED_NOT_RUN",
+    "nativeCompileAndTests" : "BLOCKED_NO_APPLE_TOOLCHAIN",
+    "structural" : "PASS",
+    "userHarnessAcceptance" : "PENDING_NATIVE_BUILD"
+  },
+  "thresholds" : {
+    "compilerWarnings" : 0,
+    "dependencyBlockSeverity" : ["critical", "high"],
+    "mutationScoreCriticalPercent" : 80,
+    "unresolvedCriticalFindings" : 0,
+    "unresolvedHighFindings" : 0
+  },
+  "toolsAvailableForThisCandidate" : {
+    "bash" : "5.2.21",
+    "imageMagick" : "6.9.12-98",
+    "jq" : "1.7",
+    "platform" : "Linux x86_64",
+    "swift" : null,
+    "xcode" : null
+  }
+}

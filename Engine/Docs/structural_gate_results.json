@@ -1,0 +1,23 @@
+{
+  "candidate" : "0.1.0-provisional",
+  "checks" : [
+    { "id" : "STRUCT-JSON", "status" : "PASS", "evidence" : "JSON resources parse" },
+    { "id" : "STRUCT-LOC", "status" : "PASS", "evidence" : "Japanese error and issue keys complete" },
+    { "id" : "STRUCT-PROFILES", "status" : "PASS", "evidence" : "Bundled profile hashes match" },
+    { "id" : "STRUCT-BOUNDARY", "status" : "PASS", "evidence" : "No SwiftUI/UIKit/network/analytics import in PrintMaeEngine" },
+    { "id" : "STRUCT-PRICE", "status" : "PASS", "evidence" : "No hard-coded runtime ¥980 string" },
+    { "id" : "STRUCT-PLACEHOLDERS", "status" : "PASS", "evidence" : "No TODO, FIXME, or fatalError placeholder" },
+    { "id" : "STRUCT-SOURCE", "status" : "PASS", "evidence" : "24 Swift files present" },
+    { "id" : "STRUCT-TESTS", "status" : "PASS", "evidence" : "30 XCTest methods present" },
+    { "id" : "STRUCT-ICON-SIZE", "status" : "PASS", "evidence" : "1024x1024 opaque sRGB PNG" },
+    { "id" : "STRUCT-ICON-PALETTE", "status" : "PASS", "evidence" : "Two-color flat icon master" },
+    { "id" : "STRUCT-CONTRACT", "status" : "PASS", "evidence" : "Critical requirement anchors retained in canonical contract" }
+  ],
+  "contractVersion" : "2026-09-25.1",
+  "executedAt" : "2026-09-25T00:00:00Z",
+  "nativeToolchain" : {
+    "status" : "BLOCKED",
+    "reason" : "Swift/Xcode/Apple frameworks unavailable in this runtime"
+  },
+  "overall" : "PASS_STRUCTURAL_ONLY"
+}

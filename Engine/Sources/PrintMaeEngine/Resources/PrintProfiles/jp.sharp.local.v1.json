@@ -1,0 +1,28 @@
+{
+  "acceptedOutputTypes" : [
+    "com.adobe.pdf"
+  ],
+  "allowedPaper" : [
+    "a4Portrait",
+    "a4Landscape",
+    "b5Portrait",
+    "b5Landscape"
+  ],
+  "allowsEncryptedPDF" : false,
+  "displayNameKey" : "profile.sharpLocal",
+  "id" : "jp.sharp.local.v1",
+  "maxBytesPerFile" : 30000000,
+  "maxPagesPerFile" : 200,
+  "requiresUniformPaperSize" : true,
+  "reviewValidDays" : 180,
+  "reviewedAt" : "2026-09-25T00:00:00Z",
+  "safeInsetMillimetres" : {
+    "bottom" : 5,
+    "leading" : 5,
+    "top" : 5,
+    "trailing" : 5
+  },
+  "sourceURLs" : [
+    "https://networkprint.ne.jp/sharp_netprint/ja/top.aspx"
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "acceptedOutputTypes" : [
+    "com.adobe.pdf"
+  ],
+  "allowedPaper" : [
+    "a4Portrait",
+    "a4Landscape",
+    "b5Portrait",
+    "b5Landscape"
+  ],
+  "allowsEncryptedPDF" : false,
+  "displayNameKey" : "profile.generic",
+  "id" : "jp.generic.pdf.v1",
+  "maxBytesPerFile" : 10000000,
+  "maxPagesPerFile" : 99,
+  "requiresUniformPaperSize" : true,
+  "reviewValidDays" : 180,
+  "reviewedAt" : "2026-09-25T00:00:00Z",
+  "safeInsetMillimetres" : {
+    "bottom" : 5,
+    "leading" : 5,
+    "top" : 5,
+    "trailing" : 5
+  },
+  "sourceURLs" : []
+}
