@@ -63,10 +63,17 @@ public struct NativeOutputVerifier: OutputVerifying, Sendable {
             }
         }
         add("pages.dimensions", boxesPass, "tolerance=0.5pt")
-        let inferredPaper = actualBoxes.compactMap { PrintGeometry.inferredPaper(for: $0) }
+        let inferredPaper = actualBoxes.map { PrintGeometry.inferredPaper(for: $0) }
         let supportedPaper = inferredPaper.count == actualBoxes.count &&
-            inferredPaper.allSatisfy(profile.allowedPaper.contains)
-        add("profile.paper", supportedPaper, "all pages must match an allowed A4/B5 target")
+            inferredPaper.allSatisfy { paper in paper.map(profile.allowedPaper.contains) ?? false }
+        let boxSummary = actualBoxes.map { "\($0.width)x\($0.height)" }
+        let paperSummary = inferredPaper.map { $0?.rawValue ?? "unknown" }
+        let allowedSummary = profile.allowedPaper.map(\.rawValue).sorted()
+        add(
+            "profile.paper",
+            supportedPaper,
+            "boxes=\(boxSummary), inferred=\(paperSummary), allowed=\(allowedSummary)"
+        )
         let sizeKeys = Set(actualBoxes.map {
             "\(Int($0.width.rounded()))x\(Int($0.height.rounded()))"
         })

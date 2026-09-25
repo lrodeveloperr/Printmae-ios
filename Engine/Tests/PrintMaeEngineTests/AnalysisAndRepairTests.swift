@@ -66,10 +66,16 @@ final class AnalysisAndRepairTests: XCTestCase {
             target: .a4Portrait
         )
         XCTAssertTrue(report.issues.contains { $0.code == .mixedPaperSizes && $0.severity == .blocking })
-        XCTAssertTrue(
-            report.issues.contains { $0.code == .contentOutsideSafeArea },
-            "issues=\(report.issues.map(\.code)); visibleBounds=\(report.pages.map(\.visibleContentBounds))"
-        )
+        if !report.issues.contains({ $0.code == .contentOutsideSafeArea }) {
+            let bounds = report.pages.map { page -> String in
+                guard let rect = page.visibleContentBounds else { return "nil" }
+                return String(describing: rect)
+            }
+            XCTFail(
+                "issues=\(report.issues.map { $0.code.rawValue }); " +
+                "visibleBounds=\(bounds)"
+            )
+        }
     }
 
     func testKnownImageDPIUsesExact150Boundary() async throws {
