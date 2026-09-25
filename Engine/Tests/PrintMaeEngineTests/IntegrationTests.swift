@@ -9,8 +9,10 @@ final class IntegrationTests: XCTestCase {
         let staging = repository.stagingRoot
         let importer = LocalDocumentImporter(stagingRoot: staging)
         let ledger = FreeExportEntitlementLedger(store: MemoryLedgerDataStore())
+        let verifier = CapturingVerifier()
         let engine = PrintPreparationEngine(
             importer: importer,
+            verifier: verifier,
             jobs: repository,
             entitlements: ledger,
             profiles: ProfileCatalog(now: { ISO8601DateFormatter().date(from: "2026-09-25T12:00:00Z")! })
@@ -24,7 +26,14 @@ final class IntegrationTests: XCTestCase {
         XCTAssertEqual(job.report?.pageCount, 2)
         job = try await engine.preparePreview(jobID: job.id)
         let outputDirectory = try await repository.outputDirectory(for: job.id)
-        let artifact = try await engine.verifiedExport(jobID: job.id, destinationDirectory: outputDirectory)
+        let artifact: ExportArtifact
+        do {
+            artifact = try await engine.verifiedExport(jobID: job.id, destinationDirectory: outputDirectory)
+        } catch {
+            let failures = await verifier.failedChecks()
+            XCTFail("Export failed: \(error); verification failures: \(failures.map { "\($0.code)=\($0.detail)" })")
+            return
+        }
         XCTAssertEqual(artifact.parts.count, 1)
         XCTAssertTrue(artifact.parts[0].verification.pass)
         let entitlement = await ledger.snapshot()
@@ -84,5 +93,24 @@ final class IntegrationTests: XCTestCase {
         try await repository.saveImmediately(job)
         let kept = try await repository.cleanupCompletedJobs(olderThan: old.addingTimeInterval(86_400))
         XCTAssertEqual(kept, 0)
+    }
+}
+
+private actor CapturingVerifier: OutputVerifying {
+    private let verifier = NativeOutputVerifier()
+    private var lastReport: VerificationReport?
+
+    func verify(
+        output: URL,
+        expected: RenderedPart,
+        profile: PrintProfile
+    ) async throws -> VerificationReport {
+        let report = try await verifier.verify(output: output, expected: expected, profile: profile)
+        lastReport = report
+        return report
+    }
+
+    func failedChecks() -> [VerificationCheck] {
+        lastReport?.checks.filter { !$0.passed } ?? []
     }
 }
