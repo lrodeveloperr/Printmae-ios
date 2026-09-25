@@ -210,7 +210,9 @@ public struct NativePDFRepairer: PrintRepairing, Sendable {
                 profileInsets: fitInsets ?? EdgeInsetsMM(top: 0, leading: 0, bottom: 0, trailing: 0),
                 additionalMargins: margins
             )
-            let pageInfo: [CFString: Any] = [kCGPDFContextMediaBox: targetRect]
+            var mediaBox = targetRect
+            let mediaBoxData = Data(bytes: &mediaBox, count: MemoryLayout<CGRect>.size)
+            let pageInfo: [CFString: Any] = [kCGPDFContextMediaBox: mediaBoxData as CFData]
             context.beginPDFPage(pageInfo as CFDictionary)
             context.setFillColor(CGColor(gray: 1, alpha: 1))
             context.fill(targetRect)

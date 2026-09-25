@@ -39,7 +39,9 @@ enum PerformanceTestSupport {
                 throw AppError(.renderFailed)
             }
 
-            context.beginPDFPage([kCGPDFContextMediaBox: pageRect] as CFDictionary)
+            var mediaBox = pageRect
+            let mediaBoxData = Data(bytes: &mediaBox, count: MemoryLayout<CGRect>.size)
+            context.beginPDFPage([kCGPDFContextMediaBox: mediaBoxData] as CFDictionary)
             context.draw(image, in: pageRect)
             context.setFillColor(CGColor(red: 0.11, green: 0.18, blue: 0.38, alpha: 1))
             context.fill(CGRect(x: 42, y: 64 + CGFloat(pageIndex % 20), width: pageRect.width - 84, height: 16))

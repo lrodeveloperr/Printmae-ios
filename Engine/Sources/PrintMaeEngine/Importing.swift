@@ -181,7 +181,9 @@ public enum ImagePDFBuilder {
 
         var effectiveDPI: [Double] = []
         for image in images {
-            let pageInfo: [CFString: Any] = [kCGPDFContextMediaBox: paperRect]
+            var mediaBox = paperRect
+            let mediaBoxData = Data(bytes: &mediaBox, count: MemoryLayout<CGRect>.size)
+            let pageInfo: [CFString: Any] = [kCGPDFContextMediaBox: mediaBoxData as CFData]
             context.beginPDFPage(pageInfo as CFDictionary)
             context.setFillColor(CGColor(gray: 1, alpha: 1))
             context.fill(paperRect)

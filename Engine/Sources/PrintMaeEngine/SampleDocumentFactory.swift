@@ -22,7 +22,9 @@ public enum SampleDocumentFactory {
         else { throw AppError(.renderFailed) }
         for (index, paper) in papers.enumerated() {
             let page = CGRect(origin: .zero, size: paper.points)
-            let pageInfo: [CFString: Any] = [kCGPDFContextMediaBox: page]
+            var mediaBox = page
+            let mediaBoxData = Data(bytes: &mediaBox, count: MemoryLayout<CGRect>.size)
+            let pageInfo: [CFString: Any] = [kCGPDFContextMediaBox: mediaBoxData as CFData]
             context.beginPDFPage(pageInfo as CFDictionary)
             context.setFillColor(CGColor(gray: 1, alpha: 1))
             context.fill(page)
