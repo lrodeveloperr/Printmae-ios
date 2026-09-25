@@ -100,13 +100,13 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Run performance budget tests on iPhone SE 2 simulator
+      - name: Run performance budget tests on iPhone 16e compact simulator
         working-directory: Engine
         run: >-
           xcodebuild
           -scheme PrintMaeEngine-Package
           -configuration Release
-          -destination 'platform=iOS Simulator,name=iPhone 16e,OS=latest'
+          -destination 'platform=iOS Simulator,name=iPhone 16e,OS=26.2'
           -parallel-testing-enabled NO
           -only-testing:PrintMaeEngineTests/MemoryBudgetTests
           -only-testing:PrintMaeEngineTests/PerformanceBudgetTests
