@@ -26,7 +26,7 @@ final class GeometryPropertyTests: XCTestCase {
         XCTAssertThrowsError(try PrintGeometry.aspectFitScale(source: .zero, destination: destination))
         XCTAssertThrowsError(
             try PrintGeometry.aspectFitScale(
-                source: CGSize(width: .infinity, height: 1),
+                source: CGSize(width: CGFloat.infinity, height: 1),
                 destination: destination
             )
         )
