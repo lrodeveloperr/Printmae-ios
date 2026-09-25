@@ -13,11 +13,12 @@ final class RepairMutationTests: XCTestCase {
     }
 
     private func descriptor(for url: URL, byteCount: Int64? = nil) throws -> SourceDescriptor {
-        SourceDescriptor(
+        let actualBytes = Int64((try url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0)
+        return SourceDescriptor(
             kind: .pdf,
             stagedRelativePath: url.lastPathComponent,
             originalDisplayName: url.lastPathComponent,
-            byteCount: byteCount ?? Int64((try url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0),
+            byteCount: byteCount ?? actualBytes,
             sha256: try FileHash.sha256(of: url)
         )
     }
