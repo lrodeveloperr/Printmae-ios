@@ -25,6 +25,36 @@ final class RecipeAndRatingTests: XCTestCase {
         }
     }
 
+    func testApplyingAfterUndoDiscardsTheRedoStack() {
+        let history = RecipeHistory()
+        var snapshot = PrintJobSnapshot.new()
+        snapshot = history.apply(.rotate(pageIndexes: IndexSet(integer: 0), quarterTurnsClockwise: 1), to: snapshot)
+        snapshot = history.apply(.rotate(pageIndexes: IndexSet(integer: 1), quarterTurnsClockwise: 2), to: snapshot)
+        snapshot = history.undo(snapshot)
+        XCTAssertEqual(snapshot.redoRecipes.count, 1)
+
+        // A fresh edit after an undo must invalidate the redo stack, not leave the old future
+        // sitting there to be replayed by a later redo.
+        snapshot = history.apply(.rotate(pageIndexes: IndexSet(integer: 2), quarterTurnsClockwise: 3), to: snapshot)
+        XCTAssertTrue(snapshot.redoRecipes.isEmpty)
+    }
+
+    func testRedoPushesTheCurrentRecipeBackOntoUndo() {
+        let history = RecipeHistory()
+        var snapshot = PrintJobSnapshot.new()
+        snapshot = history.apply(.rotate(pageIndexes: IndexSet(integer: 0), quarterTurnsClockwise: 1), to: snapshot)
+        let afterFirstFix = snapshot.editRecipe
+        snapshot = history.apply(.rotate(pageIndexes: IndexSet(integer: 1), quarterTurnsClockwise: 2), to: snapshot)
+        snapshot = history.undo(snapshot)
+        XCTAssertEqual(snapshot.editRecipe, afterFirstFix)
+
+        snapshot = history.redo(snapshot)
+        // Undoing again after the redo must be able to step back to exactly the pre-redo
+        // recipe, which only works if redo pushed it onto the undo stack.
+        snapshot = history.undo(snapshot)
+        XCTAssertEqual(snapshot.editRecipe, afterFirstFix)
+    }
+
     func testCompressionPolicyNeverDropsBelow150DPI() {
         XCTAssertTrue(CompressionPolicy().isValid)
         XCTAssertFalse(CompressionPolicy(rasterDPI: 149, minimumRasterDPI: 149).isValid)

@@ -60,4 +60,54 @@ final class StateMachineTests: XCTestCase {
         snapshot.phase = .sharing
         XCTAssertEqual(JobStateReducer().recoveredAfterUncleanTermination(snapshot).phase, .exportVerified)
     }
+
+    func testInterruptedImportRecoversByWhetherSourceWasStaged() {
+        var withoutSource = PrintJobSnapshot.new()
+        withoutSource.phase = .importing
+        withoutSource.source = nil
+        XCTAssertEqual(
+            JobStateReducer().recoveredAfterUncleanTermination(withoutSource).phase,
+            .draft
+        )
+
+        var withSource = PrintJobSnapshot.new()
+        withSource.phase = .importing
+        withSource.source = SourceDescriptor(
+            kind: .pdf,
+            stagedRelativePath: "fixture.pdf",
+            originalDisplayName: "fixture.pdf",
+            byteCount: 10,
+            sha256: "hash"
+        )
+        XCTAssertEqual(
+            JobStateReducer().recoveredAfterUncleanTermination(withSource).phase,
+            .analysing
+        )
+    }
+
+    func testInterruptedRepairRecoversByWhetherReportExisted() {
+        var withoutReport = PrintJobSnapshot.new()
+        withoutReport.phase = .repairing
+        withoutReport.report = nil
+        XCTAssertEqual(
+            JobStateReducer().recoveredAfterUncleanTermination(withoutReport).phase,
+            .analysing
+        )
+
+        var withReport = PrintJobSnapshot.new()
+        withReport.phase = .repairing
+        withReport.report = PreflightReport(
+            profileID: ProfileCatalog.genericID,
+            readiness: .ready,
+            pageCount: 1,
+            inputBytes: 10,
+            pages: [],
+            issues: [],
+            analysedAt: Date()
+        )
+        XCTAssertEqual(
+            JobStateReducer().recoveredAfterUncleanTermination(withReport).phase,
+            .reportReady
+        )
+    }
 }

@@ -179,6 +179,138 @@ final class AnalysisAndRepairTests: XCTestCase {
         XCTAssertTrue(manifest.parts[0].temporaryURL.lastPathComponent.contains("part_01_of_03"))
     }
 
+    func testInteractiveFeaturesWithinLimitsCopyThroughUnflattened() async throws {
+        let base = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: base) }
+        try FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
+        let plain = base.appendingPathComponent("plain.pdf")
+        try SampleDocumentFactory.makeA4PDF(at: plain, pageCount: 1)
+        guard let document = PDFDocument(url: plain), let page = document.page(at: 0) else {
+            XCTFail("Fixture PDF did not open")
+            return
+        }
+        let annotation = PDFAnnotation(bounds: CGRect(x: 10, y: 10, width: 20, height: 20), forType: .text, withProperties: nil)
+        page.addAnnotation(annotation)
+        let source = base.appendingPathComponent("annotated.pdf")
+        XCTAssertTrue(document.write(to: source))
+
+        let descriptor = SourceDescriptor(
+            kind: .pdf,
+            stagedRelativePath: source.lastPathComponent,
+            originalDisplayName: "annotated.pdf",
+            byteCount: Int64((try source.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0),
+            sha256: try FileHash.sha256(of: source)
+        )
+        let profile = ProfileCatalog(now: { Self.fixedDate }).load(ProfileCatalog.genericID).profile
+        let output = base.appendingPathComponent(".copy-through.partial.pdf")
+        // An empty recipe on a document with interactive features (here, an annotation) that
+        // is within every profile limit must copy through unflattened rather than demand
+        // flattening approval.
+        let manifest = try await NativePDFRepairer().render(
+            document: StagedDocument(descriptor: descriptor, url: source),
+            recipe: EditRecipe(),
+            profile: profile,
+            target: .a4Portrait,
+            destination: output
+        )
+        XCTAssertEqual(manifest.parts.count, 1)
+        XCTAssertFalse(manifest.flattened)
+        XCTAssertEqual(manifest.parts[0].pageIndexes, [0])
+    }
+
+    func testCleanPDFHasNoIssuesAndIsReady() async throws {
+        let base = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: base) }
+        try FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
+        let source = base.appendingPathComponent("clean.pdf")
+        try SampleDocumentFactory.makeA4PDF(at: source, pageCount: 1)
+        let descriptor = SourceDescriptor(
+            kind: .pdf,
+            stagedRelativePath: source.lastPathComponent,
+            originalDisplayName: "clean.pdf",
+            byteCount: Int64((try source.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0),
+            sha256: try FileHash.sha256(of: source)
+        )
+        let profile = ProfileCatalog(now: { Self.fixedDate }).load(ProfileCatalog.genericID).profile
+        let report = try await NativePreflightAnalyser(now: { Self.fixedDate }).analyse(
+            document: StagedDocument(descriptor: descriptor, url: source),
+            profile: profile,
+            target: .a4Portrait
+        )
+        // A page with no outline, no annotations and nothing exceeding any limit must not be
+        // flagged as needing review for any reason (in particular, not for interactive
+        // features it doesn't have).
+        XCTAssertEqual(report.readiness, .ready, "issues=\(report.issues.map(\.code.rawValue))")
+        XCTAssertTrue(report.issues.isEmpty, "issues=\(report.issues.map(\.code.rawValue))")
+    }
+
+    func testMixedOrientationsAcrossPagesIsReviewNotBlocking() async throws {
+        let base = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: base) }
+        try FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
+        let plain = base.appendingPathComponent("plain.pdf")
+        try SampleDocumentFactory.makeA4PDF(at: plain, pageCount: 2)
+        // Rotate only the second page. This changes its effective (portrait/landscape)
+        // orientation without changing its raw crop-box dimensions, so it triggers
+        // mixedOrientations without also triggering the (blocking) mixedPaperSizes check.
+        guard let document = PDFDocument(url: plain), let secondPage = document.page(at: 1) else {
+            XCTFail("Fixture PDF did not open")
+            return
+        }
+        secondPage.rotation = 90
+        let source = base.appendingPathComponent("rotated.pdf")
+        XCTAssertTrue(document.write(to: source))
+
+        let descriptor = SourceDescriptor(
+            kind: .pdf,
+            stagedRelativePath: source.lastPathComponent,
+            originalDisplayName: "rotated.pdf",
+            byteCount: Int64((try source.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0),
+            sha256: try FileHash.sha256(of: source)
+        )
+        let profile = ProfileCatalog(now: { Self.fixedDate }).load(ProfileCatalog.genericID).profile
+        let report = try await NativePreflightAnalyser(now: { Self.fixedDate }).analyse(
+            document: StagedDocument(descriptor: descriptor, url: source),
+            profile: profile,
+            target: .a4Portrait
+        )
+        XCTAssertFalse(report.issues.contains { $0.code == .mixedPaperSizes }, "issues=\(report.issues.map(\.code.rawValue))")
+        XCTAssertTrue(report.issues.contains { $0.code == .mixedOrientations && $0.severity == .review })
+        // No other issue on this fixture is blocking, so the overall readiness must land on
+        // .review, not be pushed all the way to .blocked or left at .ready.
+        XCTAssertEqual(report.readiness, .review, "issues=\(report.issues.map(\.code.rawValue))")
+    }
+
+    func testBlockingIssueSortsAheadOfReviewIssues() async throws {
+        let base = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: base) }
+        try FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
+        let source = base.appendingPathComponent("mixed-and-oversized.pdf")
+        try SampleDocumentFactory.makePDF(
+            at: source,
+            papers: [.a4Portrait, .a4Landscape],
+            contentTouchesEdge: false
+        )
+        let descriptor = SourceDescriptor(
+            kind: .pdf,
+            stagedRelativePath: source.lastPathComponent,
+            originalDisplayName: "mixed-and-oversized.pdf",
+            // Force a blocking byteLimitExceeded issue alongside the review-level
+            // mixedOrientations issue this fixture already produces.
+            byteCount: 999_000_000,
+            sha256: try FileHash.sha256(of: source)
+        )
+        let profile = ProfileCatalog(now: { Self.fixedDate }).load(ProfileCatalog.genericID).profile
+        let report = try await NativePreflightAnalyser(now: { Self.fixedDate }).analyse(
+            document: StagedDocument(descriptor: descriptor, url: source),
+            profile: profile,
+            target: .a4Portrait
+        )
+        XCTAssertTrue(report.issues.count >= 2, "issues=\(report.issues.map(\.code.rawValue))")
+        XCTAssertEqual(report.issues.first?.severity, .blocking, "issues=\(report.issues.map { "\($0.code.rawValue)=\($0.severity)" })")
+        XCTAssertEqual(report.readiness, .blocked)
+    }
+
     func testVerifierRejectsWrongDimensions() async throws {
         let base = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: base) }

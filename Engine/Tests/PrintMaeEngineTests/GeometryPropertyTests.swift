@@ -51,6 +51,33 @@ final class GeometryPropertyTests: XCTestCase {
         XCTAssertEqual(PaperSpec.a4Portrait.points.width, 210.0 / 25.4 * 72.0, accuracy: 0.000_001)
         XCTAssertEqual(PaperSpec.a4Portrait.points.height, 297.0 / 25.4 * 72.0, accuracy: 0.000_001)
     }
+
+    func testSafeRectangleRejectsNegativeInsetsEvenWhenFinite() {
+        let paper = CGRect(x: 0, y: 0, width: 100, height: 100)
+        XCTAssertThrowsError(
+            try PrintGeometry.safeRectangle(
+                paper: paper,
+                profileInsets: EdgeInsetsMM(top: -1, leading: 0, bottom: 0, trailing: 0)
+            )
+        )
+    }
+
+    func testNormalizedQuarterTurnsTreatsZeroAsAlreadyNormalized() {
+        XCTAssertEqual(PrintGeometry.normalizedQuarterTurns(0), 0)
+        XCTAssertEqual(PrintGeometry.normalizedQuarterTurns(4), 0)
+        XCTAssertEqual(PrintGeometry.normalizedQuarterTurns(-1), 3)
+    }
+
+    func testInferredPaperRequiresBothDimensionsWithinTolerance() {
+        let a4 = PaperSpec.a4Portrait.points
+        let widthMatchesHeightDoesNot = CGRect(x: 0, y: 0, width: a4.width, height: 1)
+        XCTAssertNil(PrintGeometry.inferredPaper(for: widthMatchesHeightDoesNot))
+    }
+
+    func testOrientationPortraitTreatsExactSquareAsPortrait() {
+        let square = CGRect(x: 0, y: 0, width: 100, height: 100)
+        XCTAssertTrue(PrintGeometry.orientationPortrait(box: square, rotationDegrees: 0))
+    }
 }
 
 private struct TestLCG {

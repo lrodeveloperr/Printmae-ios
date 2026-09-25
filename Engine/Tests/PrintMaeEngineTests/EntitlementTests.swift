@@ -103,6 +103,68 @@ final class EntitlementTests: XCTestCase {
         let offline = await ledger.snapshot()
         XCTAssertEqual(offline.status, .lifetimeVerified)
     }
+
+    func testPendingAndFreeSnapshotsDoNotEraseCachedLifetimeEither() async throws {
+        // Every branch of installStoreSnapshot that isn't .lifetimeVerified/.refundedOrRevoked
+        // must be equally unable to downgrade an already-verified lifetime status, not just the
+        // offline one.
+        for status: EntitlementStatus in [.purchasePending, .purchaseCancelled, .purchaseFailed, .free] {
+            let ledger = FreeExportEntitlementLedger(store: MemoryLedgerDataStore())
+            try await ledger.installStoreSnapshot(
+                EntitlementSnapshot(status: .lifetimeVerified, freeExportsRemaining: 3, lifetimeTransactionID: "tx")
+            )
+            try await ledger.installStoreSnapshot(
+                EntitlementSnapshot(status: status, freeExportsRemaining: 0)
+            )
+            let after = await ledger.snapshot()
+            XCTAssertEqual(after.status, .lifetimeVerified, "status \(status) must not downgrade a cached lifetime entitlement")
+        }
+    }
+
+    func testAuthorisedBeforeUpgradeDoesNotConsumeAFreeExportAfterUpgrading() async throws {
+        let ledger = FreeExportEntitlementLedger(store: MemoryLedgerDataStore())
+        let request = ExportRequestKey(jobID: UUID(), recipeRevision: 1)
+        // Authorised while still on the free tier, so this authorisation is flagged as
+        // consuming a free export...
+        let auth = try await ledger.authoriseExport(request: request)
+        XCTAssertTrue(auth.consumesFreeExport)
+
+        // ...but the user upgrades to lifetime before the export is actually verified/committed.
+        try await ledger.installStoreSnapshot(
+            EntitlementSnapshot(status: .lifetimeVerified, freeExportsRemaining: 3, lifetimeTransactionID: "tx")
+        )
+        try await ledger.commitVerifiedExport(auth)
+
+        let after = await ledger.snapshot()
+        XCTAssertEqual(after.freeExportsRemaining, 3, "Committing a pre-upgrade authorisation must not spend a free export once the account is lifetime")
+    }
+
+    func testCommittingASecondAuthorisationAfterBudgetIsExhaustedThrows() async throws {
+        let ledger = FreeExportEntitlementLedger(store: MemoryLedgerDataStore())
+        // Drain the budget down to exactly one export remaining.
+        for revision in 0 ..< 2 {
+            let auth = try await ledger.authoriseExport(
+                request: ExportRequestKey(jobID: UUID(), recipeRevision: revision)
+            )
+            try await ledger.commitVerifiedExport(auth)
+        }
+        XCTAssertEqual((await ledger.snapshot()).freeExportsRemaining, 1)
+
+        // Authorising two more distinct exports is allowed (authorising never spends budget by
+        // itself), but only one of them can actually be committed.
+        let thirdAuth = try await ledger.authoriseExport(
+            request: ExportRequestKey(jobID: UUID(), recipeRevision: 2)
+        )
+        let fourthAuth = try await ledger.authoriseExport(
+            request: ExportRequestKey(jobID: UUID(), recipeRevision: 3)
+        )
+        try await ledger.commitVerifiedExport(thirdAuth)
+        XCTAssertEqual((await ledger.snapshot()).freeExportsRemaining, 0)
+
+        await XCTAssertThrowsAppError(.entitlementRequired) {
+            try await ledger.commitVerifiedExport(fourthAuth)
+        }
+    }
 }
 
 private func XCTAssertThrowsAppError(
