@@ -216,6 +216,15 @@ final class AnalysisAndRepairTests: XCTestCase {
         XCTAssertEqual(manifest.parts.count, 1)
         XCTAssertFalse(manifest.flattened)
         XCTAssertEqual(manifest.parts[0].pageIndexes, [0])
+        // Only the copy-through path preserves annotations byte-for-byte; the generic redraw
+        // path (which would run if hasInteractiveFeatures were wrongly computed as false here,
+        // since this fixture has an annotation but no outline) draws page content only and
+        // would silently drop the annotation.
+        guard let outputDocument = PDFDocument(url: output) else {
+            XCTFail("Rendered output did not open")
+            return
+        }
+        XCTAssertEqual(outputDocument.page(at: 0)?.annotations.count, 1)
     }
 
     func testCleanPDFHasNoIssuesAndIsReady() async throws {
@@ -308,6 +317,84 @@ final class AnalysisAndRepairTests: XCTestCase {
         )
         XCTAssertTrue(report.issues.count >= 2, "issues=\(report.issues.map(\.code.rawValue))")
         XCTAssertEqual(report.issues.first?.severity, .blocking, "issues=\(report.issues.map { "\($0.code.rawValue)=\($0.severity)" })")
+        XCTAssertEqual(report.readiness, .blocked)
+    }
+
+    func testLowImageResolutionBoundaryIsExactly150DPIInIsolation() async throws {
+        let base = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: base) }
+        try FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
+        let source = base.appendingPathComponent("single.pdf")
+        try SampleDocumentFactory.makeA4PDF(at: source, pageCount: 1)
+        let profile = ProfileCatalog(now: { Self.fixedDate }).load(ProfileCatalog.genericID).profile
+
+        // Exactly at 150 DPI, isolated from any other page: must not be flagged as low
+        // resolution.
+        let atBoundary = SourceDescriptor(
+            kind: .imagePDF,
+            stagedRelativePath: source.lastPathComponent,
+            originalDisplayName: "single.pdf",
+            byteCount: 1_000,
+            sha256: "fixture",
+            effectiveImageDPIByPage: [0: 150]
+        )
+        let atReport = try await NativePreflightAnalyser(now: { Self.fixedDate }).analyse(
+            document: StagedDocument(descriptor: atBoundary, url: source),
+            profile: profile,
+            target: .a4Portrait
+        )
+        XCTAssertFalse(atReport.issues.contains { $0.code == .lowImageResolution }, "issues=\(atReport.issues.map(\.code.rawValue))")
+
+        // Just under 150 DPI, isolated: must be flagged.
+        let underBoundary = SourceDescriptor(
+            kind: .imagePDF,
+            stagedRelativePath: source.lastPathComponent,
+            originalDisplayName: "single.pdf",
+            byteCount: 1_000,
+            sha256: "fixture",
+            effectiveImageDPIByPage: [0: 149.9]
+        )
+        let underReport = try await NativePreflightAnalyser(now: { Self.fixedDate }).analyse(
+            document: StagedDocument(descriptor: underBoundary, url: source),
+            profile: profile,
+            target: .a4Portrait
+        )
+        XCTAssertTrue(underReport.issues.contains { $0.code == .lowImageResolution }, "issues=\(underReport.issues.map(\.code.rawValue))")
+    }
+
+    func testSingleBlockingIssueAloneYieldsBlockedReadiness() async throws {
+        let base = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: base) }
+        try FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
+        let source = base.appendingPathComponent("three.pdf")
+        try SampleDocumentFactory.makeA4PDF(at: source, pageCount: 3)
+        let profile = PrintProfile(
+            id: "fixture.single-blocking",
+            displayNameKey: "fixture",
+            reviewedAt: Self.fixedDate,
+            reviewValidDays: 1,
+            sourceURLs: [],
+            acceptedOutputTypes: ["com.adobe.pdf"],
+            maxBytesPerFile: 10_000_000,
+            maxPagesPerFile: 2,
+            allowedPaper: Set(PaperSpec.allCases),
+            allowsEncryptedPDF: false,
+            requiresUniformPaperSize: true,
+            safeInsetMillimetres: .conservative
+        )
+        let descriptor = SourceDescriptor(
+            kind: .pdf,
+            stagedRelativePath: source.lastPathComponent,
+            originalDisplayName: "three.pdf",
+            byteCount: Int64((try source.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0),
+            sha256: try FileHash.sha256(of: source)
+        )
+        let report = try await NativePreflightAnalyser(now: { Self.fixedDate }).analyse(
+            document: StagedDocument(descriptor: descriptor, url: source),
+            profile: profile,
+            target: .a4Portrait
+        )
+        XCTAssertEqual(report.issues.map(\.code), [.pageLimitExceeded], "issues=\(report.issues.map(\.code.rawValue))")
         XCTAssertEqual(report.readiness, .blocked)
     }
 

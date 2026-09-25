@@ -19,6 +19,14 @@ final class PerformanceBudgetTests: XCTestCase {
         let sourceBytes = try PerformanceTestSupport.fileSize(source)
         XCTAssertTrue((9_000_000 ... 11_000_000).contains(sourceBytes), "Fixture is \(sourceBytes) bytes")
 
+        // With only 12 samples, percentile95 degenerates to the max: ceil(12 * 0.95) == 12,
+        // so a single one-time cold-start cost (first-ever PDFKit/CoreGraphics framework load
+        // in this fresh test process, dyld/page-cache warmup) would otherwise leak into the
+        // measured p95 as a false outlier. Run one untimed import first to absorb that cost,
+        // without touching the actual budget being asserted below.
+        let warmupRoot = base.appendingPathComponent("warmup", isDirectory: true)
+        _ = try await measureImport(sourceURL: source, repositoryRoot: warmupRoot, expectedPageCount: 20)
+
         var samples: [Double] = []
         for index in 0 ..< 12 {
             let repositoryRoot = base.appendingPathComponent("run-\(index)", isDirectory: true)

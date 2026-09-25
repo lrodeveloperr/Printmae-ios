@@ -199,6 +199,33 @@ final class VerificationTests: XCTestCase {
         XCTAssertEqual(report.checks.first { $0.code == "profile.paper" }?.passed, false)
     }
 
+    func testPagesCountCheckFailsWhenExpectedCountDoesNotMatchActual() async throws {
+        let base = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: base) }
+        try FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
+        let source = base.appendingPathComponent("a4.pdf")
+        try SampleDocumentFactory.makeA4PDF(at: source, pageCount: 1)
+        // The output genuinely has 1 page, but the expected part claims 2: this must fail
+        // regardless of every other check (dimensions, paper support, etc.) passing.
+        let expected = RenderedPart(
+            temporaryURL: source,
+            pageIndexes: [0, 1],
+            expectedPageBoxes: [
+                RectPoints(CGRect(origin: .zero, size: PaperSpec.a4Portrait.points)),
+                RectPoints(CGRect(origin: .zero, size: PaperSpec.a4Portrait.points))
+            ],
+            sourceURL: base.appendingPathComponent("original.pdf")
+        )
+        let profile = ProfileCatalog(now: { Self.fixedDate }).load(ProfileCatalog.genericID).profile
+        let report = try await NativeOutputVerifier(now: { Self.fixedDate }).verify(
+            output: source,
+            expected: expected,
+            profile: profile
+        )
+        XCTAssertEqual(report.checks.first { $0.code == "pages.count" }?.passed, false)
+        XCTAssertFalse(report.pass)
+    }
+
     func testUniformPaperCheckFailsWhenPageSizesDiffer() async throws {
         let base = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: base) }
