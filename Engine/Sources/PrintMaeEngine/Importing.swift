@@ -84,9 +84,27 @@ public actor LocalDocumentImporter: DocumentImporter {
               let pdf = PDFDocument(url: document.url),
               pdf.isEncrypted else { return document }
         guard pdf.unlock(withPassword: password) else { throw AppError(.wrongPassword) }
+
+        // Unlocking only grants in-memory access: PDFDocument.write(to:) carries the source's
+        // encryption dictionary through to the output, so writing the "unlocked" document as-is
+        // can still produce an encrypted file (this depends on which tool produced the source
+        // PDF). Copying every page into a fresh PDFDocument is what reliably drops the
+        // encryption regardless of the source producer.
+        let rebuilt = PDFDocument()
+        for index in 0 ..< pdf.pageCount {
+            guard let page = pdf.page(at: index)?.copy() as? PDFPage else {
+                throw AppError(.stagingFailed)
+            }
+            rebuilt.insert(page, at: rebuilt.pageCount)
+        }
+        rebuilt.documentAttributes = pdf.documentAttributes
+        if let outline = pdf.outlineRoot {
+            rebuilt.outlineRoot = Self.copiedOutline(outline, from: pdf, to: rebuilt)
+        }
+
         let partial = document.url.deletingLastPathComponent()
             .appendingPathComponent(".\(UUID().uuidString).unlocked.partial.pdf")
-        guard pdf.write(to: partial),
+        guard rebuilt.write(to: partial),
               let proof = PDFDocument(url: partial),
               !proof.isEncrypted,
               proof.pageCount > 0 else {
@@ -106,6 +124,29 @@ public actor LocalDocumentImporter: DocumentImporter {
             effectiveImageDPIByPage: document.descriptor.effectiveImageDPIByPage
         )
         return StagedDocument(descriptor: descriptor, url: document.url)
+    }
+
+    /// Page copies carry their own annotations, but the outline lives on the document and is
+    /// lost when rebuilding into a fresh one, so bookmarks need remapping onto the new pages.
+    /// A destination whose page no longer resolves is dropped rather than left dangling.
+    private static func copiedOutline(
+        _ node: PDFOutline,
+        from source: PDFDocument,
+        to target: PDFDocument
+    ) -> PDFOutline {
+        let copy = PDFOutline()
+        copy.label = node.label
+        if let destination = node.destination, let page = destination.page {
+            let index = source.index(for: page)
+            if index != NSNotFound, let newPage = target.page(at: index) {
+                copy.destination = PDFDestination(page: newPage, at: destination.point)
+            }
+        }
+        for childIndex in 0 ..< node.numberOfChildren {
+            guard let child = node.child(at: childIndex) else { continue }
+            copy.insertChild(copiedOutline(child, from: source, to: target), at: copy.numberOfChildren)
+        }
+        return copy
     }
 
     private func stagePDF(_ sourceURL: URL) throws -> StagedDocument {
