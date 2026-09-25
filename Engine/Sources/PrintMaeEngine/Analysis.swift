@@ -191,7 +191,6 @@ enum PDFContentBoundsDetector {
                   ) else { return nil }
 
             let bitmapRect = CGRect(x: 0, y: 0, width: width, height: height)
-            context.setInterpolationQuality(.none)
             context.setFillColor(CGColor(gray: 1, alpha: 1))
             context.fill(bitmapRect)
             let transform = page.getDrawingTransform(
