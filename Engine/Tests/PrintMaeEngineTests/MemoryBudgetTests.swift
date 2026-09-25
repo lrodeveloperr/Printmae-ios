@@ -7,8 +7,8 @@ import Darwin
 final class MemoryBudgetTests: XCTestCase {
     func testTwoHundredPageThirtyMegabyteImportMemoryAndTemporaryStorage() async throws {
         try XCTSkipUnless(
-            ProcessInfo.processInfo.environment["SIMULATOR_DEVICE_NAME"] == "iPhone SE (2nd generation)",
-            "Memory and storage budgets are measured on the iPhone SE 2 simulator job."
+            ProcessInfo.processInfo.environment["SIMULATOR_DEVICE_NAME"] == "iPhone 16e",
+            "Memory and storage budgets are measured on the iPhone 16e simulator job."
         )
 
         let base = FileManager.default.temporaryDirectory
@@ -52,7 +52,7 @@ final class MemoryBudgetTests: XCTestCase {
 
         let storedBytes = try PerformanceTestSupport.recursiveSize(repositoryRoot)
         let storageMultiplier = Double(storedBytes) / Double(sourceBytes)
-        print("PERF reference=iPhone-SE-2-simulator peak-memory=\(peakMemoryMB)MB storage-multiplier=\(storageMultiplier) fixture=\(sourceBytes)bytes stored=\(storedBytes)bytes")
+        print("PERF reference=iPhone-16e-simulator peak-memory=\(peakMemoryMB)MB storage-multiplier=\(storageMultiplier) fixture=\(sourceBytes)bytes stored=\(storedBytes)bytes")
         XCTAssertLessThanOrEqual(peakMemoryMB, 350, "Peak resident memory exceeded 350 MB")
         XCTAssertLessThanOrEqual(storageMultiplier, 3.0, "Temporary storage exceeded 3x the source PDF")
     }

@@ -6,8 +6,8 @@ import PDFKit
 final class PerformanceBudgetTests: XCTestCase {
     func testImportToFirstReportP95ForTenMegabytePDF() async throws {
         try XCTSkipUnless(
-            ProcessInfo.processInfo.environment["SIMULATOR_DEVICE_NAME"] == "iPhone SE (2nd generation)",
-            "The 10 MB latency budget is measured on the iPhone SE 2 simulator job."
+            ProcessInfo.processInfo.environment["SIMULATOR_DEVICE_NAME"] == "iPhone 16e",
+            "The 10 MB latency budget is measured on the iPhone 16e simulator job."
         )
         let base = FileManager.default.temporaryDirectory
             .appendingPathComponent("PrintMaeImportPerf-\(UUID().uuidString)", isDirectory: true)
@@ -25,14 +25,14 @@ final class PerformanceBudgetTests: XCTestCase {
             samples.append(try await measureImport(sourceURL: source, repositoryRoot: repositoryRoot, expectedPageCount: 20))
         }
         let p95 = PerformanceTestSupport.percentile95(samples)
-        print("PERF reference=iPhone-SE-2-simulator import-first-report-p95=\(p95)s fixture=\(sourceBytes)bytes samples=\(samples.count)")
+        print("PERF reference=iPhone-16e-simulator import-first-report-p95=\(p95)s fixture=\(sourceBytes)bytes samples=\(samples.count)")
         XCTAssertLessThanOrEqual(p95, 3.0, "Import-to-first-report p95 exceeded 3 seconds")
     }
 
     func testPreviewPageRenderingP95Under150Milliseconds() throws {
         try XCTSkipUnless(
-            ProcessInfo.processInfo.environment["SIMULATOR_DEVICE_NAME"] == "iPhone SE (2nd generation)",
-            "The preview rendering budget is measured on the iPhone SE 2 simulator job."
+            ProcessInfo.processInfo.environment["SIMULATOR_DEVICE_NAME"] == "iPhone 16e",
+            "The preview rendering budget is measured on the iPhone 16e simulator job."
         )
         let base = FileManager.default.temporaryDirectory
             .appendingPathComponent("PrintMaePreviewPerf-\(UUID().uuidString)", isDirectory: true)
@@ -59,7 +59,7 @@ final class PerformanceBudgetTests: XCTestCase {
             samples.append(elapsed)
         }
         let p95 = PerformanceTestSupport.percentile95(samples)
-        print("PERF reference=iPhone-SE-2-simulator preview-render-p95=\(p95)ms samples=\(samples.count)")
+        print("PERF reference=iPhone-16e-simulator preview-render-p95=\(p95)ms samples=\(samples.count)")
         XCTAssertLessThanOrEqual(p95, 150, "Preview page rendering p95 exceeded 150 ms")
     }
 

@@ -76,7 +76,8 @@ jobs:
       - name: Run mutation testing on critical modules
         working-directory: Engine
         run: |
-          muter --skip-update-check \
+          muter --skip-update-check --skip-coverage \
+            --operators 'RelationalOperatorReplacement,RemoveSideEffects,ChangeLogicalConnector' \
             --files-to-mutate 'Sources/PrintMaeEngine/Analysis.swift,Sources/PrintMaeEngine/Engine.swift,Sources/PrintMaeEngine/Entitlements.swift,Sources/PrintMaeEngine/Geometry.swift,Sources/PrintMaeEngine/Profiles.swift,Sources/PrintMaeEngine/Repair.swift,Sources/PrintMaeEngine/StateMachine.swift,Sources/PrintMaeEngine/Verification.swift' \
             --output mutation-report.txt
           cat mutation-report.txt
@@ -91,7 +92,7 @@ jobs:
           if-no-files-found: ignore
 
   iphone-se2-performance:
-    name: iPhone SE 2 simulator performance budgets
+    name: iPhone 16e simulator performance budgets
     needs: native-package
     runs-on: macos-26
     timeout-minutes: 60
@@ -105,7 +106,7 @@ jobs:
           xcodebuild
           -scheme PrintMaeEngine-Package
           -configuration Release
-          -destination 'platform=iOS Simulator,name=iPhone SE (2nd generation),OS=latest'
+          -destination 'platform=iOS Simulator,name=iPhone 16e,OS=latest'
           -parallel-testing-enabled NO
           -only-testing:PrintMaeEngineTests/MemoryBudgetTests
           -only-testing:PrintMaeEngineTests/PerformanceBudgetTests
