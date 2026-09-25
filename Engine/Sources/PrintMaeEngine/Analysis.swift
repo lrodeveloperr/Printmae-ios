@@ -176,7 +176,7 @@ enum PDFContentBoundsDetector {
         let height = max(1, Int((cropBox.height * scale).rounded(.up)))
         let bytesPerRow = width * 4
         var pixels = [UInt8](repeating: 255, count: bytesPerRow * height)
-        return pixels.withUnsafeMutableBytes { rawPixels in
+        return pixels.withUnsafeMutableBytes { rawPixels -> CGRect? in
             guard let baseAddress = rawPixels.baseAddress,
                   let colorSpace = CGColorSpace(name: CGColorSpace.sRGB),
                   let context = CGContext(
