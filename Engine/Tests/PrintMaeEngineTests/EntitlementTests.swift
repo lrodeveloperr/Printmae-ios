@@ -148,7 +148,8 @@ final class EntitlementTests: XCTestCase {
             )
             try await ledger.commitVerifiedExport(auth)
         }
-        XCTAssertEqual((await ledger.snapshot()).freeExportsRemaining, 1)
+        let afterDraining = await ledger.snapshot()
+        XCTAssertEqual(afterDraining.freeExportsRemaining, 1)
 
         // Authorising two more distinct exports is allowed (authorising never spends budget by
         // itself), but only one of them can actually be committed.
@@ -159,7 +160,8 @@ final class EntitlementTests: XCTestCase {
             request: ExportRequestKey(jobID: UUID(), recipeRevision: 3)
         )
         try await ledger.commitVerifiedExport(thirdAuth)
-        XCTAssertEqual((await ledger.snapshot()).freeExportsRemaining, 0)
+        let afterThirdCommit = await ledger.snapshot()
+        XCTAssertEqual(afterThirdCommit.freeExportsRemaining, 0)
 
         await XCTAssertThrowsAppError(.entitlementRequired) {
             try await ledger.commitVerifiedExport(fourthAuth)
