@@ -203,7 +203,6 @@ public struct NativePDFRepairer: PrintRepairing, Sendable {
         var expected: [RectPoints] = []
         for sourceIndex in pageIndexes {
             guard let page = source.page(at: sourceIndex + 1) else { throw AppError(.corruptPDF) }
-            let sourceBox = page.getBoxRect(.cropBox)
             let targetSize = normalizedPaper?.points ?? target.points
             let targetRect = CGRect(origin: .zero, size: targetSize)
             let contentRect = try PrintGeometry.safeRectangle(
