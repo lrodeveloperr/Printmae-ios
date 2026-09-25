@@ -66,7 +66,7 @@ final class AnalysisAndRepairTests: XCTestCase {
             target: .a4Portrait
         )
         XCTAssertTrue(report.issues.contains { $0.code == .mixedPaperSizes && $0.severity == .blocking })
-        if !report.issues.contains({ $0.code == .contentOutsideSafeArea }) {
+        if !report.issues.contains(where: { $0.code == .contentOutsideSafeArea }) {
             let bounds = report.pages.map { page -> String in
                 guard let rect = page.visibleContentBounds else { return "nil" }
                 return String(describing: rect)
