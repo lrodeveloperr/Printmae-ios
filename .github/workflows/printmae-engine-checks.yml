@@ -77,7 +77,7 @@ jobs:
         working-directory: Engine
         run: |
           muter --skip-update-check --skip-coverage \
-            --operators 'RelationalOperatorReplacement,RemoveSideEffects,ChangeLogicalConnector' \
+            --operators RelationalOperatorReplacement RemoveSideEffects ChangeLogicalConnector \
             --files-to-mutate 'Sources/PrintMaeEngine/Analysis.swift,Sources/PrintMaeEngine/Engine.swift,Sources/PrintMaeEngine/Entitlements.swift,Sources/PrintMaeEngine/Geometry.swift,Sources/PrintMaeEngine/Profiles.swift,Sources/PrintMaeEngine/Repair.swift,Sources/PrintMaeEngine/StateMachine.swift,Sources/PrintMaeEngine/Verification.swift' \
             --output mutation-report.txt
           cat mutation-report.txt
