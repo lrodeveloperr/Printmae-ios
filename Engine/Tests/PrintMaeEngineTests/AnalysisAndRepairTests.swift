@@ -65,7 +65,12 @@ final class AnalysisAndRepairTests: XCTestCase {
             profile: profile,
             target: .a4Portrait
         )
-        XCTAssertTrue(report.issues.contains { $0.code == .mixedPaperSizes && $0.severity == .blocking })
+        XCTAssertTrue(
+            report.issues.contains { $0.code == .mixedPaperSizes && $0.severity == .blocking },
+            "issues=\(report.issues.map { $0.code.rawValue }); " +
+                "cropBoxes=\(report.pages.map { String(describing: $0.cropBox.cgRect.size) }); " +
+                "inferred=\(report.pages.map { $0.inferredPaper?.rawValue ?? "unknown" })"
+        )
         if !report.issues.contains(where: { $0.code == .contentOutsideSafeArea }) {
             let bounds = report.pages.map { page -> String in
                 guard let rect = page.visibleContentBounds else { return "nil" }

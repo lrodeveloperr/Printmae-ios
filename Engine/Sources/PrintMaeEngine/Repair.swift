@@ -109,6 +109,7 @@ public struct NativePDFRepairer: PrintRepairing, Sendable {
                     pdfKit: pdf,
                     pageIndexes: group,
                     recipe: recipe,
+                    target: target,
                     flattenApproved: flattenApproved,
                     compression: compression,
                     compressionQuality: quality,
@@ -161,6 +162,7 @@ public struct NativePDFRepairer: PrintRepairing, Sendable {
         pdfKit: PDFDocument,
         pageIndexes: [Int],
         recipe: EditRecipe,
+        target: PaperSpec,
         flattenApproved: Bool,
         compression: CompressionPolicy?,
         compressionQuality: Double?,
@@ -202,7 +204,7 @@ public struct NativePDFRepairer: PrintRepairing, Sendable {
         for sourceIndex in pageIndexes {
             guard let page = source.page(at: sourceIndex + 1) else { throw AppError(.corruptPDF) }
             let sourceBox = page.getBoxRect(.cropBox)
-            let targetSize = normalizedPaper?.points ?? sourceBox.size
+            let targetSize = normalizedPaper?.points ?? target.points
             let targetRect = CGRect(origin: .zero, size: targetSize)
             let contentRect = try PrintGeometry.safeRectangle(
                 paper: targetRect,
