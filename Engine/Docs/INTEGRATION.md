@@ -63,6 +63,7 @@ The Share Extension may copy a security-scoped input into the same app-group sta
 
 ## 5. Required host configuration
 
+- Set the app target bundle identifier to `com.worksbien.printmae`.
 - Add the non-consumable product `com.worksbien.printmae.pro.lifetime`.
 - Use an App Group only if the Share Extension requires it.
 - Add a privacy manifest matching local-only document processing.
