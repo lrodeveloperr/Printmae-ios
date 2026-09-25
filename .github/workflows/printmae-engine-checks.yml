@@ -125,12 +125,18 @@ jobs:
           xcrun simctl list devices available | grep -A2 "iOS 26.2" || true
           xcodebuild -list
 
+      # -configuration Release: the import-to-first-report latency budget (<=3s) is calibrated
+      # against optimized code. A Debug build on the simulator measured ~11s for the same work —
+      # Debug Swift plus simulator overhead, not a real regression. Release needs
+      # ENABLE_TESTABILITY=YES because the test target still does `@testable import`.
       - name: Run memory and performance budget tests on iPhone 16e
         working-directory: Engine
         run: |
           xcodebuild test \
             -scheme PrintMaeEngine-Package \
             -destination 'platform=iOS Simulator,name=iPhone 16e,OS=26.2' \
+            -configuration Release \
             -only-testing:PrintMaeEngineTests/MemoryBudgetTests \
             -only-testing:PrintMaeEngineTests/PerformanceBudgetTests \
-            CODE_SIGNING_ALLOWED=NO
+            CODE_SIGNING_ALLOWED=NO \
+            ENABLE_TESTABILITY=YES
