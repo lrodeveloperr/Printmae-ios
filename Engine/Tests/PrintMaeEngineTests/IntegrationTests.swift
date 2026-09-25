@@ -65,6 +65,11 @@ final class IntegrationTests: XCTestCase {
         XCTAssertEqual(job.phase, .previewReady)
         XCTAssertEqual(job.editRecipe.actions.count, 1)
 
+        // applyFix saves debounced (not immediately); a second call before that save lands
+        // would otherwise re-read the pre-edit snapshot from disk via jobs.require and silently
+        // drop this edit, so flush it through explicitly first.
+        try await engine.flushAutosave(jobID: job.id)
+
         // A second fix applied while already in .previewReady must not be rejected by the
         // guarded state machine: previewReady -> previewReady is a legal self-transition.
         job = try await engine.applyFix(jobID: job.id, action: .rotate(pageIndexes: IndexSet(integer: 1), quarterTurnsClockwise: 2))

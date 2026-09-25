@@ -114,7 +114,8 @@ public actor FreeExportEntitlementLedger: EntitlementProviding {
         }
         let authorisation = ExportAuthorisation(
             request: request,
-            consumesFreeExport: !unlimited
+            consumesFreeExport: !unlimited,
+            issuedAt: now()
         )
         current.authorisations[authorisation.id] = authorisation
         try persist(current)
