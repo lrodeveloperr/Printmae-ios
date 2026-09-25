@@ -44,6 +44,32 @@ final class EntitlementTests: XCTestCase {
         XCTAssertEqual(afterRelaunch.freeExportsRemaining, 3)
     }
 
+    func testStaleAuthorisationsArePrunedWithoutAffectingRemainingBudget() async throws {
+        let store = MemoryLedgerDataStore()
+        let early = Date(timeIntervalSince1970: 1_700_000_000)
+        let firstLedger = FreeExportEntitlementLedger(store: store, now: { early })
+        let firstRequest = ExportRequestKey(jobID: UUID(), recipeRevision: 1)
+        let firstAuth = try await firstLedger.authoriseExport(request: firstRequest)
+        try await firstLedger.commitVerifiedExport(firstAuth)
+        XCTAssertEqual((await firstLedger.snapshot()).freeExportsRemaining, 2)
+
+        // A relaunch far past the retention window must still behave correctly, and its next
+        // ledger write should evict the now-stale authorisation record rather than keep it forever.
+        let late = early.addingTimeInterval(120 * 24 * 60 * 60)
+        let relaunched = FreeExportEntitlementLedger(store: store, now: { late })
+        let secondAuth = try await relaunched.authoriseExport(
+            request: ExportRequestKey(jobID: UUID(), recipeRevision: 2)
+        )
+        try await relaunched.commitVerifiedExport(secondAuth)
+        XCTAssertEqual((await relaunched.snapshot()).freeExportsRemaining, 1)
+
+        // Re-authorising the original request after it has aged out of the ledger is a brand
+        // new authorisation, not a resurrection of the pruned one, and it is still bound by the
+        // remaining free-export budget rather than granted again for free.
+        let reauthorised = try await relaunched.authoriseExport(request: firstRequest)
+        XCTAssertNotEqual(reauthorised.id, firstAuth.id)
+    }
+
     func testVerifiedLifetimeAllowsUnlimitedExports() async throws {
         let ledger = FreeExportEntitlementLedger(store: MemoryLedgerDataStore())
         try await ledger.installStoreSnapshot(

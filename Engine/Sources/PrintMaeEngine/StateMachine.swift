@@ -10,6 +10,7 @@ public enum JobEvent: Hashable, Sendable {
     case preview
     case requestExport
     case exportAuthorised
+    case exportAuthorisationDenied
     case exportVerified
     case beginSharing
     case shareCancelled
@@ -26,15 +27,15 @@ public struct JobStateReducer: Sendable {
         .importing: [.awaitingPassword, .analysing, .recoverableFailure, .terminalFailure],
         .awaitingPassword: [.analysing, .draft, .terminalFailure],
         .analysing: [.reportReady, .recoverableFailure, .terminalFailure],
-        .reportReady: [.repairing, .previewReady, .draft],
+        .reportReady: [.repairing, .previewReady, .draft, .reportReady],
         .repairing: [.reportReady, .previewReady, .recoverableFailure],
-        .previewReady: [.exportAuthorisation, .repairing, .draft],
+        .previewReady: [.exportAuthorisation, .repairing, .draft, .reportReady, .previewReady],
         .exportAuthorisation: [.exporting, .previewReady],
         .exporting: [.exportVerified, .recoverableFailure],
-        .exportVerified: [.sharing, .completed],
+        .exportVerified: [.sharing, .completed, .recoverableFailure],
         .sharing: [.completed, .exportVerified],
         .completed: [.draft],
-        .recoverableFailure: [.importing, .analysing, .repairing, .exporting, .draft],
+        .recoverableFailure: [.importing, .analysing, .repairing, .exporting, .draft, .previewReady],
         .terminalFailure: [.draft]
     ]
 
@@ -57,6 +58,7 @@ public struct JobStateReducer: Sendable {
         case .repairReady, .preview: target = .previewReady
         case .requestExport: target = .exportAuthorisation
         case .exportAuthorised: target = .exporting
+        case .exportAuthorisationDenied: target = .previewReady
         case .exportVerified: target = .exportVerified
         case .beginSharing: target = .sharing
         case .shareCancelled: target = .exportVerified

@@ -62,8 +62,18 @@ public actor PrintPreparationEngine {
         let normalized = normalizePassword(password)
         guard !normalized.isEmpty else { throw AppError(.wrongPassword) }
         let encrypted = try await jobs.stagedDocument(for: jobID)
+        let staged: StagedDocument
         do {
-            let staged = try await importer.unlock(encrypted, password: normalized)
+            staged = try await importer.unlock(encrypted, password: normalized)
+        } catch let error as AppError where error.code == .wrongPassword {
+            // Guard above guarantees phase is still .awaitingPassword here, so this
+            // only records the failure; it never forces a transition the reducer
+            // would reject.
+            job.lastError = error
+            try await jobs.saveImmediately(job)
+            throw error
+        }
+        do {
             try await jobs.registerStagedDocument(staged, for: jobID)
             job.source = staged.descriptor
             job = try reducer.reduce(job, event: .beginAnalysis)
@@ -78,11 +88,6 @@ public actor PrintPreparationEngine {
             job = try reducer.reduce(job, event: .analysisReady)
             try await jobs.saveImmediately(job)
             return job
-        } catch let error as AppError where error.code == .wrongPassword {
-            job.phase = .awaitingPassword
-            job.lastError = error
-            try await jobs.saveImmediately(job)
-            throw error
         } catch let error as AppError {
             let event: JobEvent = error.retryable
                 ? .recoverableFailure(error)
@@ -107,8 +112,7 @@ public actor PrintPreparationEngine {
         job.selectedProfileID = profileID
         job.export = nil
         job.report = report
-        job.phase = .reportReady
-        job.updatedAt = Date()
+        job = try reducer.reduce(job, event: .analysisReady)
         try await jobs.saveImmediately(job)
         return job
     }
@@ -119,7 +123,7 @@ public actor PrintPreparationEngine {
             throw AppError(.illegalTransition, retryable: false)
         }
         job = recipeHistory.apply(action, to: job)
-        job.phase = .previewReady
+        job = try reducer.reduce(job, event: .preview)
         await jobs.saveDebounced(job)
         return job
     }
@@ -175,7 +179,9 @@ public actor PrintPreparationEngine {
             job = try reducer.reduce(job, event: .exportAuthorised)
             try await jobs.saveImmediately(job)
         } catch let appError as AppError {
-            job.phase = .previewReady
+            if let rolledBack = try? reducer.reduce(job, event: .exportAuthorisationDenied) {
+                job = rolledBack
+            }
             job.lastError = appError
             try? await jobs.saveImmediately(job)
             await diagnostics.record(.entitlementDenied, error: appError, jobID: jobID)
@@ -250,9 +256,13 @@ public actor PrintPreparationEngine {
                 }
             }
             let appError = AppError.map(error)
-            job.phase = .recoverableFailure
             job.export = nil
-            job.lastError = appError
+            if let failed = try? reducer.reduce(job, event: .recoverableFailure(appError)) {
+                job = failed
+            } else {
+                job.phase = .recoverableFailure
+                job.lastError = appError
+            }
             try? await jobs.saveImmediately(job)
             await diagnostics.record(.verificationFailed, error: appError, jobID: jobID)
             throw error

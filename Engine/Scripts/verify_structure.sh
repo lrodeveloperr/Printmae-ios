@@ -19,6 +19,12 @@ required_string_keys=(
   error.verificationFailed error.insufficientStorage error.entitlementRequired error.purchasePending
   error.storeUnavailable error.jobNotFound error.persistenceFailed error.cancelled
 )
+# Ad hoc localizationKey overrides (AppError(_, localizationKey: "...")) are not covered by the
+# fixed list above. Derive them from the source so a future override without a matching
+# Localizable.xcstrings entry fails the gate instead of shipping silently.
+while IFS= read -r key; do
+  required_string_keys+=("$key")
+done < <(grep -ohrE 'localizationKey: "[a-zA-Z0-9_.]+"' Sources | sed -E 's/.*"([a-zA-Z0-9_.]+)".*/\1/' | sort -u)
 issue_codes=(encrypted corrupt empty pageLimitExceeded byteLimitExceeded unsupportedPaper mixedPaperSizes mixedOrientations contentOutsideSafeArea lowImageResolution flatteningRequired profileNeedsReview)
 for key in "${required_string_keys[@]}"; do
   jq -e --arg key "$key" '.strings[$key].localizations.ja.stringUnit.value | length > 0' Sources/PrintMaeEngine/Resources/Localizable.xcstrings >/dev/null || strings_ok=0

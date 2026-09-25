@@ -50,7 +50,7 @@ struct PrintMaeHarness {
         let root = basePath.map(URL.init(fileURLWithPath:)) ?? FileManager.default.temporaryDirectory
             .appendingPathComponent("PrintMaeHarness-\(UUID().uuidString)", isDirectory: true)
         let repository = try FileJobRepository(root: root.appendingPathComponent("Engine", isDirectory: true))
-        let importer = LocalDocumentImporter(stagingRoot: repository.stagingRoot)
+        let importer = repository.makeImporter()
         let ledger = FreeExportEntitlementLedger(store: MemoryLedgerDataStore())
         let engine = PrintPreparationEngine(
             importer: importer,

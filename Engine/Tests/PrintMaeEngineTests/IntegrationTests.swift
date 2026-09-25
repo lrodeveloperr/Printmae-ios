@@ -42,6 +42,72 @@ final class IntegrationTests: XCTestCase {
         XCTAssertEqual(stored.phase, .exportVerified)
     }
 
+    func testRepeatedApplyFixStaysInPreviewReadyThroughReducer() async throws {
+        let base = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: base) }
+        let repository = try FileJobRepository(root: base.appendingPathComponent("Engine"))
+        let importer = repository.makeImporter()
+        let ledger = FreeExportEntitlementLedger(store: MemoryLedgerDataStore())
+        let engine = PrintPreparationEngine(
+            importer: importer,
+            jobs: repository,
+            entitlements: ledger,
+            profiles: ProfileCatalog(now: { ISO8601DateFormatter().date(from: "2026-09-25T12:00:00Z")! })
+        )
+        try FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
+        let sample = base.appendingPathComponent("sample.pdf")
+        try SampleDocumentFactory.makeA4PDF(at: sample, pageCount: 2)
+
+        var job = try await engine.importAndAnalyse(sourceURL: sample)
+        XCTAssertEqual(job.phase, .reportReady)
+
+        job = try await engine.applyFix(jobID: job.id, action: .rotate(pageIndexes: IndexSet(integer: 0), quarterTurnsClockwise: 1))
+        XCTAssertEqual(job.phase, .previewReady)
+        XCTAssertEqual(job.editRecipe.actions.count, 1)
+
+        // A second fix applied while already in .previewReady must not be rejected by the
+        // guarded state machine: previewReady -> previewReady is a legal self-transition.
+        job = try await engine.applyFix(jobID: job.id, action: .rotate(pageIndexes: IndexSet(integer: 1), quarterTurnsClockwise: 2))
+        XCTAssertEqual(job.phase, .previewReady)
+        XCTAssertEqual(job.editRecipe.actions.count, 2)
+
+        try await repository.flushPendingSave(for: job.id)
+        let persisted = try await repository.require(job.id)
+        XCTAssertEqual(persisted.phase, .previewReady)
+        XCTAssertEqual(persisted.editRecipe.actions.count, 2)
+    }
+
+    func testChangeProfileFromPreviewReadyReturnsToReportReady() async throws {
+        let base = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: base) }
+        let repository = try FileJobRepository(root: base.appendingPathComponent("Engine"))
+        let importer = repository.makeImporter()
+        let ledger = FreeExportEntitlementLedger(store: MemoryLedgerDataStore())
+        let engine = PrintPreparationEngine(
+            importer: importer,
+            jobs: repository,
+            entitlements: ledger,
+            profiles: ProfileCatalog(now: { ISO8601DateFormatter().date(from: "2026-09-25T12:00:00Z")! })
+        )
+        try FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
+        let sample = base.appendingPathComponent("sample.pdf")
+        try SampleDocumentFactory.makeA4PDF(at: sample, pageCount: 2)
+
+        var job = try await engine.importAndAnalyse(sourceURL: sample)
+        job = try await engine.preparePreview(jobID: job.id)
+        XCTAssertEqual(job.phase, .previewReady)
+
+        // Switching print method from the preview screen must go through the guarded
+        // state machine, not a direct phase write: previewReady -> reportReady.
+        job = try await engine.changeProfile(jobID: job.id, profileID: "jp.seven.upload.v1")
+        XCTAssertEqual(job.phase, .reportReady)
+        XCTAssertEqual(job.selectedProfileID, "jp.seven.upload.v1")
+        XCTAssertNil(job.export)
+
+        let persisted = try await repository.require(job.id)
+        XCTAssertEqual(persisted.phase, .reportReady)
+    }
+
     func testInterruptedExportRecoveryDeletesPartialAndPreservesRecipe() async throws {
         let base = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: base) }

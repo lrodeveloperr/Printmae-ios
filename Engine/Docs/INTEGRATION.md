@@ -11,7 +11,7 @@ Copy `AppIcon.appiconset` into the host asset catalog and select it as the app i
 
 ## 2. Construct the engine once
 
-Use an app-support root excluded from user-facing Files. The repository and importer must share the same staging root.
+Use an app-support root excluded from user-facing Files. Build the importer from `jobs.makeImporter()` rather than constructing `LocalDocumentImporter` separately — the repository and importer must share the same staging root, and `makeImporter()` guarantees that instead of relying on both sides being wired up correctly by hand.
 
 ```swift
 let support = try FileManager.default.url(
@@ -22,7 +22,7 @@ let support = try FileManager.default.url(
 ).appendingPathComponent("PrintMae", isDirectory: true)
 
 let jobs = try FileJobRepository(root: support)
-let importer = LocalDocumentImporter(stagingRoot: jobs.stagingRoot)
+let importer = jobs.makeImporter()
 let ledger = FreeExportEntitlementLedger()
 let engine = PrintPreparationEngine(
     importer: importer,

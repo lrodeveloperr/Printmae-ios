@@ -6,14 +6,14 @@
 
 ## Implemented
 
-- Locked job state machine and recovery mapping.
+- Locked job state machine and recovery mapping; `PrintPreparationEngine` now applies every phase change exclusively through `JobStateReducer.reduce` (no direct `job.phase` writes in the orchestrator), so the guarded transition table is the single source of truth it is documented to be.
 - Protected security-scoped staging; source-hash preservation; supported-format refusal.
 - Password entry is ephemeral. A successfully unlocked protected working copy replaces the encrypted staged copy so later recovery needs no stored password.
 - PDFKit + CGPDF dual parsing, page boxes, rotation/orientation, mixed-size checks, edge-content sampling, profile boundaries, image effective DPI, and interactive-feature warning.
 - A4/B5 aspect-preserving render, rotation, margins, safe-fit, deterministic compression qualities, page-boundary splitting, and print-only flattening approval.
 - Atomic output workflow and independent post-render verification before Share eligibility.
 - Atomic job snapshots, 300 ms debounced edit saves, interruption recovery, presets without source bytes, 24-hour cleanup, and delete-all support.
-- Keychain-backed three-export ledger with durable authorisations and idempotent verified commits.
+- Keychain-backed three-export ledger with durable authorisations, idempotent verified commits, and 90-day pruning of stale authorisation records so the ledger does not grow without bound over a lifetime install.
 - StoreKit 2 non-consumable purchase, pending/cancel/failure, restore, transaction updates, refund/revocation, offline cached-entitlement behavior, and dynamic localized price.
 - Japanese String Catalog, versioned hashed profiles, sample generator, diagnostic harness, and app icon asset catalog.
 

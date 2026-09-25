@@ -71,11 +71,22 @@ private struct LedgerState: Codable, Sendable {
 }
 
 public actor FreeExportEntitlementLedger: EntitlementProviding {
+    /// Committed authorisation records older than this are dropped on the next write so the
+    /// ledger does not grow without bound over the lifetime of a "lifetime purchase" install.
+    /// This is deliberately much longer than the 24-hour job-cleanup window in
+    /// `FileJobRepository` so a legitimately delayed resume can never be double-charged.
+    private static let authorisationRetention: TimeInterval = 90 * 24 * 60 * 60
+
     private let store: LedgerDataStore
+    private let now: @Sendable () -> Date
     private var state: LedgerState?
 
-    public init(store: LedgerDataStore = KeychainLedgerDataStore()) {
+    public init(
+        store: LedgerDataStore = KeychainLedgerDataStore(),
+        now: @escaping @Sendable () -> Date = { Date() }
+    ) {
         self.store = store
+        self.now = now
     }
 
     public func snapshot() async -> EntitlementSnapshot {
@@ -158,8 +169,23 @@ public actor FreeExportEntitlementLedger: EntitlementProviding {
     }
 
     private func persist(_ newState: LedgerState) throws {
-        try store.write(ISO8601Milliseconds.encoder().encode(newState))
-        state = newState
+        let bounded = pruned(newState, now: now())
+        try store.write(ISO8601Milliseconds.encoder().encode(bounded))
+        state = bounded
+    }
+
+    private func pruned(_ ledgerState: LedgerState, now: Date) -> LedgerState {
+        let cutoff = now.addingTimeInterval(-Self.authorisationRetention)
+        let expiredIDs = ledgerState.authorisations.values
+            .filter { $0.issuedAt < cutoff }
+            .map(\.id)
+        guard !expiredIDs.isEmpty else { return ledgerState }
+        var next = ledgerState
+        for id in expiredIDs {
+            next.authorisations.removeValue(forKey: id)
+            next.committedAuthorisationIDs.remove(id)
+        }
+        return next
     }
 }
 
