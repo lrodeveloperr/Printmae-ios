@@ -5,7 +5,7 @@ import PDFKit
 public struct NativePreflightAnalyser: PreflightAnalysing, Sendable {
     private let now: @Sendable () -> Date
 
-    public init(now: @escaping @Sendable () -> Date = Date.init) {
+    public init(now: @escaping @Sendable () -> Date = { Date() }) {
         self.now = now
     }
 

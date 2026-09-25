@@ -17,7 +17,7 @@ public struct ProfileCatalog: @unchecked Sendable {
     private let resourceBundle: Bundle
     private let now: @Sendable () -> Date
 
-    public init(resourceBundle: Bundle? = nil, now: @escaping @Sendable () -> Date = Date.init) {
+    public init(resourceBundle: Bundle? = nil, now: @escaping @Sendable () -> Date = { Date() }) {
         self.resourceBundle = resourceBundle ?? .module
         self.now = now
     }
