@@ -176,52 +176,58 @@ enum PDFContentBoundsDetector {
         let height = max(1, Int((cropBox.height * scale).rounded(.up)))
         let bytesPerRow = width * 4
         var pixels = [UInt8](repeating: 255, count: bytesPerRow * height)
-        guard let colorSpace = CGColorSpace(name: CGColorSpace.sRGB),
-              let context = CGContext(
-                data: &pixels,
-                width: width,
-                height: height,
-                bitsPerComponent: 8,
-                bytesPerRow: bytesPerRow,
-                space: colorSpace,
-                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
-              )
-        else { return nil }
+        return pixels.withUnsafeMutableBytes { rawPixels in
+            guard let baseAddress = rawPixels.baseAddress,
+                  let colorSpace = CGColorSpace(name: CGColorSpace.sRGB),
+                  let context = CGContext(
+                    data: baseAddress,
+                    width: width,
+                    height: height,
+                    bitsPerComponent: 8,
+                    bytesPerRow: bytesPerRow,
+                    space: colorSpace,
+                    bitmapInfo: CGBitmapInfo.byteOrder32Big
+                        .union(CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedLast.rawValue)).rawValue
+                  ) else { return nil }
 
-        let bitmapRect = CGRect(x: 0, y: 0, width: width, height: height)
-        context.setFillColor(CGColor(gray: 1, alpha: 1))
-        context.fill(bitmapRect)
-        let transform = page.getDrawingTransform(
-            .cropBox,
-            rect: bitmapRect,
-            rotate: 0,
-            preserveAspectRatio: true
-        )
-        context.concatenate(transform)
-        context.drawPDFPage(page)
+            let bitmapRect = CGRect(x: 0, y: 0, width: width, height: height)
+            context.setInterpolationQuality(.none)
+            context.setFillColor(CGColor(gray: 1, alpha: 1))
+            context.fill(bitmapRect)
+            let transform = page.getDrawingTransform(
+                .cropBox,
+                rect: bitmapRect,
+                rotate: 0,
+                preserveAspectRatio: true
+            )
+            context.concatenate(transform)
+            context.drawPDFPage(page)
+            context.flush()
 
-        var minX = width
-        var minY = height
-        var maxX = -1
-        var maxY = -1
-        for y in 0 ..< height {
-            for x in 0 ..< width {
-                let offset = y * bytesPerRow + x * 4
-                let nonWhite = pixels[offset] < 248 || pixels[offset + 1] < 248 || pixels[offset + 2] < 248
-                if nonWhite {
-                    minX = min(minX, x)
-                    maxX = max(maxX, x)
-                    minY = min(minY, y)
-                    maxY = max(maxY, y)
+            let bytes = rawPixels.bindMemory(to: UInt8.self)
+            var minX = width
+            var minY = height
+            var maxX = -1
+            var maxY = -1
+            for y in 0 ..< height {
+                for x in 0 ..< width {
+                    let offset = y * bytesPerRow + x * 4
+                    let nonWhite = bytes[offset] < 248 || bytes[offset + 1] < 248 || bytes[offset + 2] < 248
+                    if nonWhite {
+                        minX = min(minX, x)
+                        maxX = max(maxX, x)
+                        minY = min(minY, y)
+                        maxY = max(maxY, y)
+                    }
                 }
             }
+            guard maxX >= minX, maxY >= minY else { return nil }
+            return CGRect(
+                x: cropBox.minX + CGFloat(minX) / CGFloat(width) * cropBox.width,
+                y: cropBox.minY + CGFloat(minY) / CGFloat(height) * cropBox.height,
+                width: CGFloat(maxX - minX + 1) / CGFloat(width) * cropBox.width,
+                height: CGFloat(maxY - minY + 1) / CGFloat(height) * cropBox.height
+            )
         }
-        guard maxX >= minX, maxY >= minY else { return nil }
-        return CGRect(
-            x: cropBox.minX + CGFloat(minX) / CGFloat(width) * cropBox.width,
-            y: cropBox.minY + CGFloat(minY) / CGFloat(height) * cropBox.height,
-            width: CGFloat(maxX - minX + 1) / CGFloat(width) * cropBox.width,
-            height: CGFloat(maxY - minY + 1) / CGFloat(height) * cropBox.height
-        )
     }
 }

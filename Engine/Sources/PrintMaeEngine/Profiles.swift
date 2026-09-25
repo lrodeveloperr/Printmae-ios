@@ -45,7 +45,7 @@ public struct ProfileCatalog: @unchecked Sendable {
                 forResource: id,
                 withExtension: "json",
                 subdirectory: "PrintProfiles"
-              ),
+              ) ?? resourceBundle.url(forResource: id, withExtension: "json"),
               let manifestURL = resourceBundle.url(forResource: "profile_hashes", withExtension: "json")
         else { throw AppError(.profileUnavailable) }
 

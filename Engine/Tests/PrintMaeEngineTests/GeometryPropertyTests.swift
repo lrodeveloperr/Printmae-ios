@@ -33,7 +33,7 @@ final class GeometryPropertyTests: XCTestCase {
         XCTAssertThrowsError(
             try PrintGeometry.aspectFitScale(
                 source: CGSize(width: 1, height: 1),
-                destination: CGRect(x: 0, y: 0, width: -1, height: 1)
+                destination: CGRect(x: CGFloat.nan, y: 0, width: 1, height: 1)
             )
         )
     }

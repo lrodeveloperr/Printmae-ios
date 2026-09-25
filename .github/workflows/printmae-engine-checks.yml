@@ -107,6 +107,7 @@ jobs:
           -configuration Release
           -destination 'platform=iOS Simulator,name=iPhone SE (2nd generation),OS=latest'
           -parallel-testing-enabled NO
+          -only-testing:PrintMaeEngineTests/MemoryBudgetTests
           -only-testing:PrintMaeEngineTests/PerformanceBudgetTests
           test
 
