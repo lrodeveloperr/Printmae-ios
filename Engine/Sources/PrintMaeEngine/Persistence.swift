@@ -164,7 +164,7 @@ public actor FileJobRepository: JobRepository {
     /// The repository and importer must share a staging root for staged-document verification
     /// to succeed; this builds an importer that is guaranteed to match this repository's root
     /// instead of relying on the caller to wire the two together correctly by convention.
-    public func makeImporter(fileManager: FileManager = .default) -> LocalDocumentImporter {
+    public nonisolated func makeImporter(fileManager: FileManager = .default) -> LocalDocumentImporter {
         LocalDocumentImporter(stagingRoot: stagingRoot, fileManager: fileManager)
     }
 
