@@ -1,0 +1,4 @@
+arguments:
+  - test
+executable: /usr/bin/swift
+testSuiteTimeout: 180

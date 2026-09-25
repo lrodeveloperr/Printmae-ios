@@ -1,5 +1,8 @@
 import Foundation
 import Darwin
+import CoreFoundation
+import CoreGraphics
+import PDFKit
 import PrintMaeEngine
 
 @main
@@ -19,6 +22,18 @@ struct PrintMaeHarness {
                 try runGeometryProperty(count: Int(arguments.dropFirst().first ?? "10000") ?? 10_000)
             case "entitlement-sim":
                 try await runEntitlementSimulation()
+            case "fuzz-pdfkit":
+                try runParserFuzz(
+                    target: .pdfKit,
+                    duration: TimeInterval(arguments.dropFirst().first ?? "1800") ?? 1800,
+                    seed: UInt64(arguments.dropFirst(2).first ?? "250925") ?? 250_925
+                )
+            case "fuzz-cgpdf":
+                try runParserFuzz(
+                    target: .cgPDF,
+                    duration: TimeInterval(arguments.dropFirst().first ?? "1800") ?? 1800,
+                    seed: UInt64(arguments.dropFirst(2).first ?? "250925") ?? 250_925
+                )
             default:
                 showHelp()
             }
@@ -115,6 +130,82 @@ struct PrintMaeHarness {
         }
     }
 
+    static func runParserFuzz(target: ParserFuzzTarget, duration: TimeInterval, seed: UInt64) throws {
+        guard duration > 0 else { throw AppError(.invalidGeometry, retryable: false) }
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("PrintMaeFuzz-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        var corpus: [Data] = []
+        for pageCount in [1, 2, 5, 12] {
+            let url = root.appendingPathComponent("seed-\(pageCount).pdf")
+            try SampleDocumentFactory.makeA4PDF(at: url, pageCount: pageCount)
+            corpus.append(try Data(contentsOf: url))
+        }
+
+        var generator = LCG(seed: seed)
+        var iterations: UInt64 = 0
+        var accepted: UInt64 = 0
+        let start = Date()
+        let deadline = start.addingTimeInterval(duration)
+        while Date() < deadline {
+            let seedIndex = min(corpus.count - 1, Int(generator.next(in: 0 ... Double(corpus.count - 1))))
+            let input = mutate(corpus[seedIndex], generator: &generator)
+            iterations += 1
+            if target.accepts(input) {
+                accepted += 1
+                if corpus.count < 64, input.count < 2_000_000, iterations % 11 == 0 {
+                    corpus.append(input)
+                }
+            }
+            if iterations % 50_000 == 0 {
+                print("FUZZ progress parser=\(target.rawValue) iterations=\(iterations) accepted=\(accepted)")
+            }
+        }
+        guard iterations > 0 else { throw AppError(.corruptPDF, retryable: false) }
+        print("FUZZ PASS parser=\(target.rawValue) seconds=\(Int(Date().timeIntervalSince(start))) iterations=\(iterations) accepted=\(accepted) seed=\(seed)")
+    }
+
+    private static func mutate(_ source: Data, generator: inout LCG) -> Data {
+        var data = source
+        let operation = Int(generator.next(in: 0 ... 5))
+        switch operation {
+        case 0:
+            let changes = Int(generator.next(in: 1 ... 8))
+            for _ in 0 ..< changes {
+                let index = Int(generator.next(in: 0 ... Double(data.count - 1)))
+                data[index] = UInt8(generator.next(in: 0 ... 255))
+            }
+        case 1:
+            let tokens = ["\n%%EOF\n", "xref\n0 1\n", "/Root 1 0 R\n", "stream\n", "endobj\n", "null"]
+            let tokenIndex = Int(generator.next(in: 0 ... Double(tokens.count - 1)))
+            let insertion = Int(generator.next(in: 0 ... Double(data.count)))
+            data.insert(contentsOf: Data(tokens[tokenIndex].utf8), at: insertion)
+        case 2:
+            let lower = Int(generator.next(in: 0 ... Double(data.count - 1)))
+            let length = Int(generator.next(in: 1 ... Double(min(512, data.count - lower))))
+            data.removeSubrange(lower ..< lower + length)
+        case 3:
+            let length = Int(generator.next(in: 1 ... Double(max(1, data.count / 3))))
+            data.removeLast(min(length, data.count - 1))
+        case 4:
+            let range = Int(generator.next(in: 1 ... Double(min(64, data.count))))
+            let lower = Int(generator.next(in: 0 ... Double(data.count - range)))
+            for index in lower ..< lower + range {
+                data[index] = UInt8(generator.next(in: 0 ... 255))
+            }
+        default:
+            let marker = Data("%%EOF".utf8)
+            if let range = data.range(of: marker), !range.isEmpty {
+                data.replaceSubrange(range, with: Data("%%EOX".utf8))
+            } else {
+                data.append(contentsOf: Data("\n%%EOF\n".utf8))
+            }
+        }
+        return data
+    }
+
     static func showHelp() {
         print("""
         PrintMae plain diagnostic harness
@@ -124,7 +215,36 @@ struct PrintMaeHarness {
           printmae-harness state-matrix               Show every legal state transition
           printmae-harness geometry-property [count]  Run deterministic aspect-fit property checks
           printmae-harness entitlement-sim            Prove the three-export/idempotency boundary
+          printmae-harness fuzz-pdfkit [seconds] [seed]  Fuzz PDFKit parser (default 1800 seconds)
+          printmae-harness fuzz-cgpdf [seconds] [seed]   Fuzz CoreGraphics PDF parser (default 1800 seconds)
         """)
+    }
+}
+
+private enum ParserFuzzTarget: String {
+    case pdfKit = "PDFKit"
+    case cgPDF = "CGPDF"
+
+    func accepts(_ data: Data) -> Bool {
+        switch self {
+        case .pdfKit:
+            guard let document = PDFDocument(data: data), document.pageCount > 0 else { return false }
+            for index in Set([0, document.pageCount / 2, document.pageCount - 1]) {
+                guard let page = document.page(at: index) else { return false }
+                _ = page.bounds(for: .mediaBox)
+                _ = page.annotations.count
+            }
+            return true
+        case .cgPDF:
+            guard let provider = CGDataProvider(data: data as CFData),
+                  let document = CGPDFDocument(provider), document.numberOfPages > 0 else { return false }
+            for index in Set([1, max(1, document.numberOfPages / 2), document.numberOfPages]) {
+                guard let page = document.page(at: index) else { return false }
+                _ = page.getBoxRect(.mediaBox)
+                _ = page.getBoxRect(.cropBox)
+            }
+            return true
+        }
     }
 }
 

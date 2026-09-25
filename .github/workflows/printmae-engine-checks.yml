@@ -43,3 +43,77 @@ jobs:
           swift run printmae-harness geometry-property 100000
           swift run printmae-harness entitlement-sim
           swift run printmae-harness state-matrix
+
+  parser-fuzz:
+    name: 30-minute ${{ matrix.parser }} fuzz session
+    needs: native-package
+    runs-on: macos-26
+    timeout-minutes: 70
+    strategy:
+      fail-fast: false
+      matrix:
+        parser: [pdfkit, cgpdf]
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Fuzz parser for 30 minutes
+        working-directory: Engine
+        run: swift run -c release printmae-harness fuzz-${{ matrix.parser }} 1800 250925
+
+  mutation-score:
+    name: Critical-module mutation score
+    needs: native-package
+    runs-on: macos-26
+    timeout-minutes: 180
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install Muter
+        run: brew install muter-mutation-testing/formulae/muter
+
+      - name: Run mutation testing on critical modules
+        working-directory: Engine
+        run: |
+          muter --skip-update-check \
+            --files-to-mutate 'Sources/PrintMaeEngine/Analysis.swift,Sources/PrintMaeEngine/Engine.swift,Sources/PrintMaeEngine/Entitlements.swift,Sources/PrintMaeEngine/Geometry.swift,Sources/PrintMaeEngine/Profiles.swift,Sources/PrintMaeEngine/Repair.swift,Sources/PrintMaeEngine/StateMachine.swift,Sources/PrintMaeEngine/Verification.swift' \
+            --output mutation-report.txt
+          cat mutation-report.txt
+          python3 Scripts/check_mutation_score.py mutation-report.txt 80
+
+      - name: Upload mutation report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: printmae-mutation-report
+          path: Engine/mutation-report.txt
+          if-no-files-found: ignore
+
+  iphone-se2-performance:
+    name: iPhone SE 2 simulator performance budgets
+    needs: native-package
+    runs-on: macos-26
+    timeout-minutes: 60
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Run performance budget tests on iPhone SE 2 simulator
+        working-directory: Engine
+        run: >-
+          xcodebuild
+          -scheme PrintMaeEngine-Package
+          -configuration Release
+          -destination 'platform=iOS Simulator,name=iPhone SE (2nd generation),OS=latest'
+          -parallel-testing-enabled NO
+          -only-testing:PrintMaeEngineTests/PerformanceBudgetTests
+          test
+
+      - name: Upload simulator test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: printmae-iphone-se2-performance
+          path: Engine/*.xcresult
+          if-no-files-found: ignore
