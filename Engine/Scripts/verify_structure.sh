@@ -40,26 +40,26 @@ for profile in Sources/PrintMaeEngine/Resources/PrintProfiles/*.json; do
 done
 [[ "$hash_ok" == 1 ]] && pass "profile hashes match" || fail "profile hashes match"
 
-if rg -n 'import SwiftUI|import UIKit|URLSession|import (Firebase|GoogleAnalytics|AppCenter)' Sources/PrintMaeEngine; then
+if grep -R -n -E 'import SwiftUI|import UIKit|URLSession|import (Firebase|GoogleAnalytics|AppCenter)' Sources/PrintMaeEngine; then
   fail "engine dependency boundary"
 else
   pass "engine dependency boundary"
 fi
 
-if rg -n '¥980|980円' Sources; then
+if grep -R -n -E '¥980|980円' Sources; then
   fail "runtime price is not hard-coded"
 else
   pass "runtime price is not hard-coded"
 fi
 
-if rg -n 'TODO|FIXME|fatalError\(' Sources Tests; then
+if grep -R -n -E 'TODO|FIXME|fatalError\(' Sources Tests; then
   fail "no unfinished or crash placeholders"
 else
   pass "no unfinished or crash placeholders"
 fi
 
 swift_files="$(find Sources Tests -name '*.swift' | wc -l | tr -d ' ')"
-test_methods="$(rg -c 'func test' Tests/PrintMaeEngineTests/*.swift | awk -F: '{sum += $2} END {print sum + 0}')"
+test_methods="$(awk '/func test/ { count++ } END { print count + 0 }' Tests/PrintMaeEngineTests/*.swift)"
 [[ "$swift_files" -ge 15 ]] && pass "Swift source inventory ($swift_files files)" || fail "Swift source inventory"
 [[ "$test_methods" -ge 20 ]] && pass "automated test inventory ($test_methods tests)" || fail "automated test inventory"
 
@@ -70,7 +70,7 @@ colors="$(identify -format '%k' AppIcon.appiconset/AppIcon-1024.png)"
 [[ "$colors" -le 4 ]] && pass "icon has restrained flat palette ($colors colors)" || fail "icon palette ($colors colors)"
 
 for requirement in REQ-IN-001 REQ-CHECK-004 REQ-FIX-003 REQ-OUT-002 REQ-DATA-001 REQ-PAY-002; do
-  rg -q "$requirement" Docs/Canonical_Product_Contract.md || fail "contract missing $requirement"
+  grep -q "$requirement" Docs/Canonical_Product_Contract.md || fail "contract missing $requirement"
 done
 pass "canonical contract requirement anchors checked"
 
