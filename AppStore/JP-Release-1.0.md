@@ -1,6 +1,6 @@
 # プリント前 — App Store Connect 1.0
 
-This is the Japanese release listing copy. The corrected description and App Review notes are saved in App Store Connect. The version remains a draft until the native build and authentic screenshots are supplied.
+Japanese is the primary App Store language. English (U.S.) is a secondary localization for readers using English controls. Both versions, the App Review notes, and contact information are saved in App Store Connect. The version remains a draft until the native build and authentic screenshots are supplied.
 
 | Field | Value |
 | --- | --- |
@@ -58,8 +58,37 @@ This is the Japanese release listing copy. The corrected description and App Rev
 | Reference name | PrintMae Pro Lifetime |
 | Japanese display name | プリント前 Pro（買い切り） |
 | Japanese description | 印刷用PDFの書き出しを回数制限なく利用できます。 |
+| English (U.S.) display name | PrintMae Pro (Lifetime) |
+| English (U.S.) description | Unlimited print-ready PDF exports with one purchase. |
 | Japan price | ¥980 |
 | Availability | Japan |
+
+## English (U.S.) localization
+
+| Field | Value |
+| --- | --- |
+| Name | PrintMae: Print-ready PDFs |
+| Subtitle | Fix margins before printing |
+| Keywords | pdf printing,convenience store,margin,paper size,rotate,compress,photo to pdf |
+| Support URL | https://worksbienstudios.com/customerservice |
+| Marketing URL | https://lrodeveloperr.github.io/Printmae-ios/ |
+
+Check a PDF before printing at a convenience store in Japan. PrintMae reviews page orientation, paper size, margins, page count, and file size, then prepares a PDF you can share with a printing app or save to Files.
+
+CHECK BEFORE PRINTING
+• Review the paper and safe print area in a page preview.
+• Compare your source and prepared pages.
+• See warnings for password-protected or unreadable files and common print-method limits.
+
+PREPARE YOUR FILE
+• Fit pages to A4 or B5 while keeping their proportions.
+• Rotate pages and add white margins.
+• Compress image-heavy PDFs, split large files, or turn photos into a PDF.
+• Reopen the exported PDF to verify its page count, size, and file size.
+
+Your documents are processed on your device. PrintMae does not require an account and has no ads, tracking, or document uploads. It does not send jobs directly to a printer and is not an official app of any convenience-store chain or printer maker. Check the final preview and settings at the copier before printing.
+
+Analysis and previews are free. Your first three print-ready PDF exports are free. After that, a one-time PrintMae Pro purchase enables unlimited exports. The current App Store price appears in the app.
 
 ## Authentic screenshot plan
 
@@ -88,5 +117,5 @@ Use a fictional document that genuinely triggers the displayed findings. The bui
 - App Review contact and the corrected Japanese version copy are saved in App Store Connect. Keep personal contact details in App Store Connect rather than this public repository.
 - No native iOS build or authentic iPhone/iPad screenshots have been uploaded. The purchase review screenshot must show the actual paywall.
 - The first native GitHub Actions build cannot resolve the private `Swift-UI-shell-ios` package from the runner. Grant that workflow read access to the package repository before using its build result to capture screenshots.
-- App privacy responses are entered but unpublished; confirm the final binary's data practices before publishing.
+- App privacy responses are entered but unpublished; the final Publish dialog asks the account holder to attest to accuracy and legal compliance. Confirm the final binary's data practices before publishing.
 - Age rating and content rights responses require a verified submission declaration. Accessibility features require a native device audit before claiming support.
