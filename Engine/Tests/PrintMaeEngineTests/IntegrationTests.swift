@@ -43,6 +43,52 @@ final class IntegrationTests: XCTestCase {
         XCTAssertEqual(stored.phase, .exportVerified)
     }
 
+    func testFailedExportCleansOnlyFilesMatchingBothJobIDAndPartial() async throws {
+        let base = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: base) }
+        let repository = try FileJobRepository(root: base.appendingPathComponent("Engine"))
+        let staging = repository.stagingRoot
+        let importer = LocalDocumentImporter(stagingRoot: staging)
+        let ledger = FreeExportEntitlementLedger(store: MemoryLedgerDataStore())
+        let engine = PrintPreparationEngine(
+            importer: importer,
+            verifier: AlwaysFailingVerifier(),
+            jobs: repository,
+            entitlements: ledger,
+            profiles: ProfileCatalog(now: { ISO8601DateFormatter().date(from: "2026-09-25T12:00:00Z")! })
+        )
+        try FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
+        let sample = base.appendingPathComponent("sample.pdf")
+        try SampleDocumentFactory.makeA4PDF(at: sample, pageCount: 1)
+
+        var job = try await engine.importAndAnalyse(sourceURL: sample)
+        job = try await engine.preparePreview(jobID: job.id)
+        let outputDirectory = try await repository.outputDirectory(for: job.id)
+        try FileManager.default.createDirectory(at: outputDirectory, withIntermediateDirectories: true)
+
+        // Pre-seed files that each match only ONE of the two cleanup conditions. Only a file
+        // matching BOTH the job's ID and "partial" should be removed by the failure-path
+        // cleanup; either condition alone being sufficient (a mutated `||`) would incorrectly
+        // sweep up these two as well.
+        let matchesNeither = outputDirectory.appendingPathComponent("unrelated.pdf")
+        let matchesIDOnly = outputDirectory.appendingPathComponent("\(job.id.uuidString)-final.pdf")
+        let matchesPartialOnly = outputDirectory.appendingPathComponent(".other-job.partial.pdf")
+        for url in [matchesNeither, matchesIDOnly, matchesPartialOnly] {
+            try Data("stub".utf8).write(to: url)
+        }
+
+        do {
+            _ = try await engine.verifiedExport(jobID: job.id, destinationDirectory: outputDirectory)
+            XCTFail("Expected the forced verification failure to propagate")
+        } catch {
+            // expected: AlwaysFailingVerifier makes every part fail verification
+        }
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: matchesNeither.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: matchesIDOnly.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: matchesPartialOnly.path))
+    }
+
     func testRepeatedApplyFixStaysInPreviewReadyThroughReducer() async throws {
         let base = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: base) }
@@ -457,6 +503,16 @@ private actor CapturingEntitlements: EntitlementProviding {
 
     func installStoreSnapshot(_ snapshot: EntitlementSnapshot) async throws {
         try await inner.installStoreSnapshot(snapshot)
+    }
+}
+
+private struct AlwaysFailingVerifier: OutputVerifying {
+    func verify(output: URL, expected: RenderedPart, profile: PrintProfile) async throws -> VerificationReport {
+        VerificationReport(
+            pass: false,
+            checks: [VerificationCheck(code: "forced.failure", passed: false, detail: "test-forced failure")],
+            verifiedAt: Date()
+        )
     }
 }
 

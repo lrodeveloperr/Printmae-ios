@@ -1,4 +1,5 @@
 import XCTest
+import CoreGraphics
 import PDFKit
 @testable import PrintMaeEngine
 
@@ -419,6 +420,54 @@ final class AnalysisAndRepairTests: XCTestCase {
         )
         XCTAssertEqual(report.issues.map(\.code), [.pageLimitExceeded], "issues=\(report.issues.map(\.code.rawValue))")
         XCTAssertEqual(report.readiness, .blocked)
+    }
+
+    func testContentBoundsDetectorTreats248AsWhiteAndAnySingleChannelBelowAsContent() throws {
+        let base = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: base) }
+        try FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
+
+        func solidFillPage(red: CGFloat, green: CGFloat, blue: CGFloat) throws -> CGPDFPage {
+            let url = base.appendingPathComponent("\(UUID().uuidString).pdf")
+            guard let consumer = CGDataConsumer(url: url as CFURL),
+                  let context = CGContext(consumer: consumer, mediaBox: nil, nil) else {
+                throw AppError(.renderFailed)
+            }
+            let rect = CGRect(x: 0, y: 0, width: 200, height: 200)
+            var mediaBox = rect
+            let mediaBoxData = Data(bytes: &mediaBox, count: MemoryLayout<CGRect>.size)
+            context.beginPDFPage([kCGPDFContextMediaBox: mediaBoxData] as CFDictionary)
+            context.setFillColor(CGColor(red: red / 255, green: green / 255, blue: blue / 255, alpha: 1))
+            context.fill(rect)
+            context.endPDFPage()
+            context.closePDF()
+            guard let document = CGPDFDocument(url as CFURL), let page = document.page(at: 1) else {
+                throw AppError(.corruptPDF, retryable: false)
+            }
+            return page
+        }
+
+        // Every existing blank/non-blank test fixture used colors where every RGB channel
+        // crossed the 248 threshold together, which can never distinguish the `||` from a `&&`,
+        // nor tell which channel's `< 248` comparison (if any) actually drives the result. These
+        // isolate one channel at a time.
+
+        // Exactly at the threshold in every channel: must read as white (no content detected).
+        let atThreshold = try solidFillPage(red: 248, green: 248, blue: 248)
+        XCTAssertNil(PDFContentBoundsDetector.detect(page: atThreshold, cropBox: atThreshold.getBoxRect(.cropBox)))
+
+        // Only the red channel dips below 248; green and blue stay at pure white (255). The
+        // `||` alone must still flag this as content.
+        let redOnly = try solidFillPage(red: 247, green: 255, blue: 255)
+        XCTAssertNotNil(PDFContentBoundsDetector.detect(page: redOnly, cropBox: redOnly.getBoxRect(.cropBox)))
+
+        // Only the green channel.
+        let greenOnly = try solidFillPage(red: 255, green: 247, blue: 255)
+        XCTAssertNotNil(PDFContentBoundsDetector.detect(page: greenOnly, cropBox: greenOnly.getBoxRect(.cropBox)))
+
+        // Only the blue channel.
+        let blueOnly = try solidFillPage(red: 255, green: 255, blue: 247)
+        XCTAssertNotNil(PDFContentBoundsDetector.detect(page: blueOnly, cropBox: blueOnly.getBoxRect(.cropBox)))
     }
 
     func testVerifierRejectsWrongDimensions() async throws {
