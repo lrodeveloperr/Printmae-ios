@@ -71,6 +71,18 @@ Capture the released build with fictional documents on both iPhone and iPad. The
 
 Use a fictional document that genuinely triggers the displayed findings. The built-in two-page A4 sample is a clean file and should not be portrayed with warnings. Do not add proof rows or values absent from the actual UI.
 
+## App Review notes
+
+アカウント登録や専用ハードウェアは不要です。iPhoneとiPadに対応しています。
+
+確認手順：
+1. 「サンプルで試す」を選択し、PDFの分析結果を確認します。
+2. 「用紙プレビューを見る」で用紙と安全範囲を確認します。
+3. 「印刷用PDFを書き出す」から印刷方法を選び、書き出します。最初の3回は無料です。
+4. iOSの共有シートで印刷アプリへの共有または「ファイル」に保存できます。
+
+書類は端末内で処理されます。広告、追跡、解析SDK、書類のアップロード、位置情報の利用はありません。4回目以降の書き出しで買い切りのプリント前 Proが案内されます。
+
 ## Submission gates
 
 - Required reviewer first name, last name, phone, and email are absent in App Store Connect; the corrected version description and reviewer notes cannot be saved until those fields are supplied.
