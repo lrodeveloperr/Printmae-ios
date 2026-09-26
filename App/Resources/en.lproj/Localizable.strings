@@ -136,7 +136,7 @@
 "元のファイル" = "Original file";
 "元の書類は保存されていません。同じ設定で新しいファイルを選んでください。" = "The original document is no longer saved. Choose a new file with the same settings.";
 "先にファイルを登録し、店頭で呼び出す方法" = "Upload the file first, then retrieve it at the store.";
-"公式アプリまたはFilesへ共有" = "Share to print app or Files";
+"印刷アプリへ共有・「ファイル」に保存" = "Share to print app or save to Files";
 "共有の準備をしています" = "Preparing to share";
 "共有先で印刷アプリを選び、店頭の最終プレビューを確認してください。" = "Choose a print app in the share sheet and check its final preview at the store.";
 "処理を完了できませんでした。もう一度お試しください。" = "Could not complete the operation. Please try again.";
@@ -160,9 +160,9 @@
 "問題と対象ページを確認してから整えてください。" = "Review the issues and affected pages before fixing them.";
 "失敗しやすい余白・向き・サイズを先に確認します。" = "Check margins, orientation, and size before you print.";
 "完了" = "Done";
-"実寸プレビュー" = "Actual-size preview";
-"実寸プレビューを準備しています" = "Preparing actual-size preview";
-"実寸プレビューを見る" = "View actual-size preview";
+"用紙プレビュー" = "Paper preview";
+"用紙プレビューを準備しています" = "Preparing paper preview";
+"用紙プレビューを見る" = "View paper preview";
 "実際の仕上がりは店頭のコピー機でも確認してください。" = "Check the final output at the store copier too.";
 "対象ページ: %@" = "Pages: %@";
 "履歴" = "History";
@@ -194,7 +194,7 @@
 "自分で調整" = "Adjust manually";
 "自動で適用できる修正はありません。" = "No automatic fixes are available.";
 "自動修正の確認" = "Review fixes";
-"自動調整・圧縮・分割を制限なく利用" = "Unlimited fixes, compression, and splitting";
+"買い切りで書き出し回数の制限を解除" = "One-time purchase for unlimited exports";
 "表示" = "View";
 "表示言語" = "Display language";
 "見つかった問題はありません。" = "No issues found.";
