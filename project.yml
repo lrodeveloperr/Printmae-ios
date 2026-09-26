@@ -14,8 +14,7 @@ targets:
     platform: iOS
     sources:
       - path: App
-        excludes: [Resources]
-    resources:
+        excludes: [Resources, DEPENDENCIES.md]
       - path: App/Resources
     dependencies:
       - package: GoodUseShell
