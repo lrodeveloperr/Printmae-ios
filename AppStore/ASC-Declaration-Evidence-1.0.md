@@ -20,7 +20,7 @@ Evidence: `App/PrintMaeApp.swift`, `App/PrintMaeModel.swift`, `App/Resources/She
 
 **Proposed answer: No third-party content supplied or accessed by the app.** The app makes its own sample PDF, accepts files selected by the user, processes them on device, and uses the system share sheet only when the user chooses to export. Its print profiles contain factual format constraints and source URLs, but no embedded third-party article, image, media catalog, or connected service. The Japanese terms place responsibility for rights in user-selected documents on the user. The listing states that the app is independent of print providers.
 
-The App Store Connect question literally includes content an app “shows or accesses.” Because user-selected PDFs can be third-party works, the account holder should confirm this intended interpretation before declaring “No.” Selecting “Yes” would assert that the developer holds necessary rights to every such document, which cannot be established from the code. Apple reference: https://developer.apple.com/help/app-store-connect/reference/app-information/app-information/ and guideline 5.2: https://developer.apple.com/app-store/review/guidelines/
+Interpretation: the content-rights declaration concerns third-party material supplied or accessed as part of the app offering. The locally generated sample, local profiles, and user-selected files do not constitute a developer-provided catalog or a third-party content service. The app cannot verify ownership of every document selected by a user; its terms require users to hold rights to the documents they process. This is the basis for “No” in the current app, with the final signed build still subject to verification. Apple reference: https://developer.apple.com/help/app-store-connect/reference/app-information/app-information/ and guideline 5.2: https://developer.apple.com/app-store/review/guidelines/
 
 ## App Privacy
 
@@ -28,7 +28,20 @@ The App Store Connect question literally includes content an app “shows or acc
 
 Evidence: `App/Resources/PrivacyInfo.xcprivacy` declares no tracking and no collected data. App/engine source has no account, analytics/ads SDK, document upload, network client, or embedded web view. Documents and analysis remain local; explicit iOS sharing goes to a user-selected destination. `StoreKit 2` handles purchase and the app locally records entitlement/export count. The linked GoodUseShell is WorksBien-owned and has no external package dependencies in its `Package.swift`; the app disables its ad rail.
 
-Apple defines collection as data transmitted off-device for developer/partner access beyond real-time servicing: https://developer.apple.com/app-store/app-privacy-details/. The final Publish dialog asks the account holder to attest that the responses are accurate and comply with guidelines and law. Verify the signed app and its dependencies, then obtain the account holder's confirmation for that attestation. Update this record if the final binary differs.
+Apple defines collection as data transmitted off-device for developer/partner access beyond real-time servicing: https://developer.apple.com/app-store/app-privacy-details/. The final Publish dialog asks the account holder to attest that the responses are accurate and comply with guidelines and law. The source-level answer is “Data Not Collected” on the current app and linked shell; verify the signed app and its dependencies before release and update this record if the final binary differs.
+
+## Code → policy → listing reconciliation
+
+| Claim | Source evidence | Public policy | Japanese listing and reviewer notes | Result |
+| --- | --- | --- | --- | --- |
+| Local document handling | `LocalDocumentImporter`, `PrintPreparationEngine`, `FileJobRepository` stage, analyze, render, and retain locally; no upload client | Processing and copies on device | On-device processing | Aligned |
+| User-directed sharing | `UIActivityViewController` receives verified local URLs only after `openShare()` | Explicit recipient choice through iOS share | Explicit iOS destination selection; wording clarified 2026-09-26 | Aligned |
+| Data/ads/tracking | Privacy manifest declares no collection/tracking; app and shell have no analytics/ad SDK; ad rail disabled | No developer collection, ads, tracking, analytics, location | Same | Aligned at source level |
+| Purchase | Keychain ledger starts with three exports; StoreKit non-consumable lifetime product ID matches listing | Apple handles purchases, one-time Pro | Three free exports, lifetime Pro, App Store display price | Aligned |
+| Content and rights | Sample PDF generated locally; no feed/content service; profile URLs are citations, not fetched content | Users responsible for document rights | Independent utility; no direct printer control | Aligned under interpretation above |
+| Age content | No account, browser, social or messaging; built-in sample has no mature content | No contrary claim | Utility description | No contrary content in app-supplied material |
+
+The former absolute “no document upload” phrasing was clarified across the policy, marketing page, Japanese listing, and reviewer notes: the app does not upload a document for processing, while iOS sharing can send it to a user-selected recipient. Source-level consistency does not prove the final binary or all possible user-imported documents.
 
 ## Current gates
 
