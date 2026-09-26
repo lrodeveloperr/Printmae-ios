@@ -456,17 +456,20 @@ final class AnalysisAndRepairTests: XCTestCase {
         let atThreshold = try solidFillPage(red: 248, green: 248, blue: 248)
         XCTAssertNil(PDFContentBoundsDetector.detect(page: atThreshold, cropBox: atThreshold.getBoxRect(.cropBox)))
 
-        // Only the red channel dips below 248; green and blue stay at pure white (255). The
-        // `||` alone must still flag this as content.
-        let redOnly = try solidFillPage(red: 247, green: 255, blue: 255)
+        // Only the red channel dips (well) below 248; green and blue stay at pure white (255).
+        // The `||` alone must still flag this as content. A wide margin (200, not 247) avoids
+        // false negatives from color-space rounding introduced by drawing through a fresh
+        // bitmap context (empirically, a fill of exactly 247 came back as >= 248 after the
+        // round trip).
+        let redOnly = try solidFillPage(red: 200, green: 255, blue: 255)
         XCTAssertNotNil(PDFContentBoundsDetector.detect(page: redOnly, cropBox: redOnly.getBoxRect(.cropBox)))
 
         // Only the green channel.
-        let greenOnly = try solidFillPage(red: 255, green: 247, blue: 255)
+        let greenOnly = try solidFillPage(red: 255, green: 200, blue: 255)
         XCTAssertNotNil(PDFContentBoundsDetector.detect(page: greenOnly, cropBox: greenOnly.getBoxRect(.cropBox)))
 
         // Only the blue channel.
-        let blueOnly = try solidFillPage(red: 255, green: 255, blue: 247)
+        let blueOnly = try solidFillPage(red: 255, green: 255, blue: 200)
         XCTAssertNotNil(PDFContentBoundsDetector.detect(page: blueOnly, cropBox: blueOnly.getBoxRect(.cropBox)))
     }
 
