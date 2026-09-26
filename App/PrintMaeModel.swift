@@ -16,10 +16,12 @@ final class PrintMaeModel: ObservableObject {
     @Published var showPassword = false
     @Published var showPaywall = false
     @Published var showShare = false
+    @Published var showFilesPicker = false
     @Published var selectedMethod = ProfileCatalog.genericID
     @Published var showOriginal = false
     @Published var showSafeArea = true
     @Published var previewPage = 0
+    @Published var previewPageCount = 1
     @Published var previewURL: URL?
     @Published var isPro = false
     @Published var freeExportsRemaining = 3
@@ -191,7 +193,11 @@ final class PrintMaeModel: ObservableObject {
         previewPage = 0
         do {
             let staged = try await repository.stagedDocument(for: job.id)
-            if job.editRecipe.actions.isEmpty { previewURL = staged.url; return }
+            if job.editRecipe.actions.isEmpty {
+                previewURL = staged.url
+                previewPageCount = job.report?.pageCount ?? 1
+                return
+            }
             let destination = FileManager.default.temporaryDirectory
                 .appendingPathComponent("preview-\(job.id.uuidString)-\(job.editRecipe.revision).pdf")
             let manifest = try await NativePDFRepairer().render(
@@ -200,6 +206,7 @@ final class PrintMaeModel: ObservableObject {
                 target: job.targetPaper, destination: destination
             )
             previewURL = manifest.parts.first?.temporaryURL
+            previewPageCount = manifest.parts.first?.pageIndexes.count ?? 1
         } catch {
             previewURL = nil
             show(error)

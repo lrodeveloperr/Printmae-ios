@@ -49,6 +49,7 @@ struct PrintMaeRoot: View {
     @State private var orderingImages = false
     @State private var password = ""
     @State private var confirmDelete = false
+    @State private var customMargin = 5.0
     @AppStorage("defaultPaper") private var defaultPaper = "a4Portrait"
     @AppStorage("defaultProfile") private var defaultProfile = ProfileCatalog.genericID
     @AppStorage("retentionDays") private var retentionDays = 1
@@ -102,6 +103,9 @@ struct PrintMaeRoot: View {
         .sheet(isPresented: $model.showPaywall) { paywall }
         .sheet(isPresented: $model.showShare, onDismiss: model.dismissShare) {
             ActivitySheet(urls: model.job?.export?.parts.map(\.url) ?? [])
+        }
+        .sheet(isPresented: $model.showFilesPicker) {
+            FilesExportSheet(urls: model.job?.export?.parts.map(\.url) ?? [])
         }
         .alert("確認してください", isPresented: Binding(
             get: { model.errorMessage != nil },
@@ -321,15 +325,16 @@ struct PrintMaeRoot: View {
             HStack {
                 Button("前のページ") { model.previewPage -= 1 }.disabled(model.previewPage == 0)
                 Spacer()
-                Text("\(model.previewPage + 1) / \(max(1, model.job?.report?.pageCount ?? 1))")
+                Text("\(model.previewPage + 1) / \(model.showOriginal ? (model.job?.report?.pageCount ?? 1) : model.previewPageCount)")
                     .monospacedDigit().accessibilityLabel("\(model.previewPage + 1)ページ目")
                 Spacer()
                 Button("次のページ") { model.previewPage += 1 }
-                    .disabled(model.previewPage + 1 >= (model.job?.report?.pageCount ?? 1))
+                    .disabled(model.previewPage + 1 >= (model.showOriginal ? (model.job?.report?.pageCount ?? 1) : model.previewPageCount))
             }
             .frame(minHeight: 44)
         }
         .frame(maxWidth: .infinity)
+        .onChange(of: model.showOriginal) { _, _ in model.previewPage = 0 }
     }
 
     private var previewOptions: some View {
@@ -342,18 +347,42 @@ struct PrintMaeRoot: View {
             }
             DisclosureGroup("仕上がりを調整") {
                 VStack(alignment: .leading, spacing: 12) {
-                    HStack {
-                        Text("用紙"); Spacer()
-                        Button("A4") { model.apply(.normalizePaper(.a4Portrait)) }
-                        Button("B5") { model.apply(.normalizePaper(.b5Portrait)) }
+                    Text("用紙と向き").font(.subheadline.bold())
+                    ForEach(PaperSpec.allCases, id: \.self) { paper in
+                        Button {
+                            model.apply(.normalizePaper(paper))
+                        } label: {
+                            Label(paperName(paper), systemImage: model.effectivePaper == paper ? "largecircle.fill.circle" : "circle")
+                                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                        }
+                    }
+                    Divider()
+                    Button("このページを右に90°回転") {
+                        model.apply(.rotate(pageIndexes: IndexSet(integer: model.previewPage), quarterTurnsClockwise: 1))
                     }.frame(minHeight: 44)
+                    Button("印刷の安全範囲に収める") {
+                        let inset = ProfileCatalog().load(model.selectedMethod).profile.safeInsetMillimetres
+                        model.apply(.fitInsideSafeArea(inset))
+                    }.frame(minHeight: 44)
+                    Text("余白").font(.subheadline.bold())
                     HStack {
-                        Text("余白"); Spacer()
+                        Spacer(minLength: 0)
                         ForEach([3.0, 5.0, 10.0], id: \.self) { mm in
                             Button("\(Int(mm)) mm") {
                                 model.apply(.addMargins(EdgeInsetsMM(top: mm, leading: mm, bottom: mm, trailing: mm)))
                             }
                         }
+                    }.frame(minHeight: 44)
+                    Stepper("カスタム：\(Int(customMargin)) mm", value: $customMargin, in: 0...30, step: 1)
+                    Button("カスタム余白を適用") {
+                        let mm = customMargin
+                        model.apply(.addMargins(EdgeInsetsMM(top: mm, leading: mm, bottom: mm, trailing: mm)))
+                    }.frame(minHeight: 44)
+                    Button("印刷方法の上限を目標に圧縮") { model.apply(.compress(CompressionPolicy())) }
+                        .frame(minHeight: 44)
+                    Button("印刷方法の上限で分割") {
+                        let profile = ProfileCatalog().load(model.selectedMethod).profile
+                        model.apply(.split(maxPages: profile.maxPagesPerFile, maxBytes: profile.maxBytesPerFile))
                     }.frame(minHeight: 44)
                     HStack {
                         Button("元に戻す") { model.undo() }.disabled(model.job?.undoRecipes.isEmpty != false)
@@ -422,6 +451,8 @@ struct PrintMaeRoot: View {
             }
             Text("共有先で印刷アプリを選び、店頭の最終プレビューを確認してください。")
                 .font(.subheadline).foregroundStyle(.secondary)
+            Button("ファイルに保存") { model.showFilesPicker = true }
+                .frame(minHeight: 44)
             Button("完了") { model.finish() }.frame(minHeight: 44)
         }
     }
@@ -622,4 +653,12 @@ private struct ActivitySheet: UIViewControllerRepresentable {
         UIActivityViewController(activityItems: urls, applicationActivities: nil)
     }
     func updateUIViewController(_ controller: UIActivityViewController, context: Context) { }
+}
+
+private struct FilesExportSheet: UIViewControllerRepresentable {
+    let urls: [URL]
+    func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
+        UIDocumentPickerViewController(forExporting: urls, asCopy: true)
+    }
+    func updateUIViewController(_ controller: UIDocumentPickerViewController, context: Context) { }
 }
