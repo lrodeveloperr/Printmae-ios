@@ -90,5 +90,5 @@ Use a fictional document that genuinely triggers the displayed findings. The bui
 - No native iOS build or authentic iPhone/iPad screenshots have been uploaded. The purchase review screenshot must show the actual paywall.
 - The first native GitHub Actions build cannot resolve the private `Swift-UI-shell-ios` package from the runner. Grant that workflow read access to the package repository before using its build result to capture screenshots.
 - Age rating (4+) and Content Rights (No) were saved and verified in App Store Connect against the source, policies, and Japanese listing.
-- App privacy is drafted as Data Not Collected but unpublished; the final Publish dialog asks the account holder to attest to accuracy and legal compliance. The signed build remains unverified.
+- App privacy was published as Data Not Collected on 2026-09-26 and verified after reload. The signed build remains unverified; update the declaration if its data practices differ.
 - Accessibility features require a native device audit before claiming support.
