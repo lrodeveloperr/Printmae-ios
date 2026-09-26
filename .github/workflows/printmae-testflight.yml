@@ -1,0 +1,75 @@
+name: PrintMae TestFlight
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  upload:
+    runs-on: macos-26
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Generate Xcode project
+        run: xcodegen generate --spec project.yml
+      - name: Archive and upload to TestFlight
+        env:
+          GOODUSE_SHELL_DEPLOY_KEY: ${{ secrets.GOODUSE_SHELL_DEPLOY_KEY }}
+          PRINTMAE_ASC_API_KEY_P8: ${{ secrets.PRINTMAE_ASC_API_KEY_P8 }}
+        run: |
+          set -euo pipefail
+          if [ -z "$GOODUSE_SHELL_DEPLOY_KEY" ] || [ -z "$PRINTMAE_ASC_API_KEY_P8" ]; then
+            echo '::error::The private shell deploy key and PrintMae App Store Connect API key are required.'
+            exit 1
+          fi
+
+          install -d -m 700 "$HOME/.ssh"
+          # GitHub's published Ed25519 host key.
+          printf '%s\n' 'github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl' > "$HOME/.ssh/known_hosts"
+          eval "$(ssh-agent -s)"
+          key_path="$RUNNER_TEMP/AuthKey_YLD8FY354W.p8"
+          trap 'ssh-agent -k >/dev/null; rm "$key_path"' EXIT
+          printf '%s\n' "$GOODUSE_SHELL_DEPLOY_KEY" | ssh-add - >/dev/null
+          printf '%s\n' "$PRINTMAE_ASC_API_KEY_P8" > "$key_path"
+          chmod 600 "$key_path"
+          unset GOODUSE_SHELL_DEPLOY_KEY PRINTMAE_ASC_API_KEY_P8
+          git config --global url."git@github.com:lrodeveloperr/Swift-UI-shell-ios.git".insteadOf \
+            "https://github.com/lrodeveloperr/Swift-UI-shell-ios.git"
+
+          xcodebuild \
+            -project PrintMaeApp.xcodeproj \
+            -scheme PrintMaeApp \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/PrintMae.xcarchive" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$key_path" \
+            -authenticationKeyID YLD8FY354W \
+            -authenticationKeyIssuerID 9f49640c-f575-42b4-b0c7-8e3194aef419 \
+            DEVELOPMENT_TEAM=49SQ3XQ68Q \
+            archive
+
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<'PLIST'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>upload</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>teamID</key><string>49SQ3XQ68Q</string>
+          </dict></plist>
+          PLIST
+
+          xcodebuild \
+            -exportArchive \
+            -archivePath "$RUNNER_TEMP/PrintMae.xcarchive" \
+            -exportPath "$RUNNER_TEMP/PrintMaeExport" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$key_path" \
+            -authenticationKeyID YLD8FY354W \
+            -authenticationKeyIssuerID 9f49640c-f575-42b4-b0c7-8e3194aef419
