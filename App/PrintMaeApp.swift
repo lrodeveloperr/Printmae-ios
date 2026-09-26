@@ -94,9 +94,12 @@ struct PrintMaeRoot: View {
                     pendingImages = urls
                     orderingImages = true
                 } else if urls.count > 1 {
+                    model.discardImportPreset()
                     model.errorMessage = L("PDFは1つずつ選んでください。画像は複数選んでまとめられます。")
                 } else { model.importFiles(urls) }
-            case .failure(let error): model.errorMessage = error.localizedDescription
+            case .failure(let error):
+                model.discardImportPreset()
+                model.errorMessage = error.localizedDescription
             }
         }
         .sheet(isPresented: $orderingImages) { imageOrderSheet }
@@ -119,7 +122,7 @@ struct PrintMaeRoot: View {
             Button(L("キャンセル"), role: .cancel) { }
         }
         .tint(Skin.indigo)
-        .onOpenURL { model.importFiles([$0]) }
+        .onOpenURL { model.importFiles([$0], usePendingPreset: false) }
     }
 
     private var title: String {
@@ -172,7 +175,7 @@ struct PrintMaeRoot: View {
         } else {
             switch model.screen {
             case .prepare:
-                GoodUsePrimaryButton(L("ファイルを選ぶ")) { model.importing = true }
+                GoodUsePrimaryButton(L("ファイルを選ぶ")) { model.beginImport() }
                     .accessibilityIdentifier("prepare.import")
             case .report:
                 if model.job?.report?.issues.contains(where: { $0.suggestedFix != nil }) == true {
@@ -546,7 +549,7 @@ struct PrintMaeRoot: View {
             .navigationTitle(L("画像の順番"))
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(L("キャンセル")) { orderingImages = false; pendingImages = [] }
+                    Button(L("キャンセル")) { orderingImages = false; pendingImages = []; model.discardImportPreset() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(L("この順番で読み込む")) {

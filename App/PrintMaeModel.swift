@@ -32,6 +32,7 @@ final class PrintMaeModel: ObservableObject {
     let engine: PrintPreparationEngine?
     let ledger: FreeExportEntitlementLedger
     let purchase: StoreKitLifetimeController
+    private var pendingImportPreset: (paper: PaperSpec, profile: String)?
 
     var activeID: UUID? { job?.id }
     var isBusy: Bool { busyLabel != nil }
@@ -86,17 +87,27 @@ final class PrintMaeModel: ObservableObject {
         freeExportsRemaining = state.freeExportsRemaining
     }
 
-    func importFiles(_ urls: [URL]) {
+    func beginImport() {
+        pendingImportPreset = nil
+        importing = true
+    }
+
+    func discardImportPreset() { pendingImportPreset = nil }
+
+    func importFiles(_ urls: [URL], usePendingPreset: Bool = true) {
         guard let engine, !urls.isEmpty, !isBusy else { return }
+        let paper = usePendingPreset ? pendingImportPreset?.paper ?? defaultPaper : defaultPaper
+        let profile = usePendingPreset ? pendingImportPreset?.profile ?? defaultProfile : defaultProfile
+        pendingImportPreset = nil
         busyLabel = L("ページを確認しています")
         errorMessage = nil
         Task {
             do {
                 let result: PrintJobSnapshot
                 if urls.count == 1 && urls[0].pathExtension.lowercased() == "pdf" {
-                    result = try await engine.importAndAnalyse(sourceURL: urls[0], profileID: defaultProfile, target: defaultPaper)
+                    result = try await engine.importAndAnalyse(sourceURL: urls[0], profileID: profile, target: paper)
                 } else {
-                    result = try await engine.importImagesAndAnalyse(sourceURLs: urls, profileID: defaultProfile, target: defaultPaper)
+                    result = try await engine.importImagesAndAnalyse(sourceURLs: urls, profileID: profile, target: paper)
                 }
                 accept(result)
                 await refreshHistory()
@@ -107,6 +118,7 @@ final class PrintMaeModel: ObservableObject {
 
     func trySample() {
         guard !isBusy else { return }
+        pendingImportPreset = nil
         do {
             let url = FileManager.default.temporaryDirectory
                 .appendingPathComponent("printmae-sample-\(UUID().uuidString).pdf")
@@ -349,8 +361,7 @@ final class PrintMaeModel: ObservableObject {
                 accept(item)
                 if screen == .preview { await makePreview() }
             } else {
-                UserDefaults.standard.set(item.targetPaper.rawValue, forKey: "defaultPaper")
-                UserDefaults.standard.set(item.selectedProfileID, forKey: "defaultProfile")
+                pendingImportPreset = (item.targetPaper, item.selectedProfileID)
                 screen = .prepare
                 importing = true
             }
