@@ -24,7 +24,26 @@ jobs:
       - name: Generate Xcode project
         run: xcodegen generate --spec project.yml
       - name: Build for iOS Simulator
+        env:
+          GOODUSE_SHELL_DEPLOY_KEY: ${{ secrets.GOODUSE_SHELL_DEPLOY_KEY }}
         run: |
+          if [ -z "$GOODUSE_SHELL_DEPLOY_KEY" ]; then
+            echo '::error::Add a read-only deploy key for Swift-UI-shell-ios as the GOODUSE_SHELL_DEPLOY_KEY Actions secret.'
+            exit 1
+          fi
+
+          # GitHub's published Ed25519 host key; do not trust an unverified ssh-keyscan result.
+          install -d -m 700 "$HOME/.ssh"
+          printf '%s\n' 'github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl' > "$HOME/.ssh/known_hosts"
+          eval "$(ssh-agent -s)"
+          trap 'ssh-agent -k >/dev/null' EXIT
+          printf '%s\n' "$GOODUSE_SHELL_DEPLOY_KEY" | ssh-add - >/dev/null
+          unset GOODUSE_SHELL_DEPLOY_KEY
+
+          # Rewrite only the pinned private Swift package URL, not every GitHub URL.
+          git config --global url."git@github.com:lrodeveloperr/Swift-UI-shell-ios.git".insteadOf \
+            "https://github.com/lrodeveloperr/Swift-UI-shell-ios.git"
+
           xcodebuild \
             -project PrintMaeApp.xcodeproj \
             -scheme PrintMaeApp \
