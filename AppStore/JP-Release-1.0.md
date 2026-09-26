@@ -87,5 +87,6 @@ Use a fictional document that genuinely triggers the displayed findings. The bui
 
 - Required reviewer first name, last name, phone, and email are absent in App Store Connect; the corrected version description and reviewer notes cannot be saved until those fields are supplied.
 - No native iOS build or authentic iPhone/iPad screenshots have been uploaded. The purchase review screenshot must show the actual paywall.
+- The first native GitHub Actions build cannot resolve the private `Swift-UI-shell-ios` package from the runner. Grant that workflow read access to the package repository before using its build result to capture screenshots.
 - App privacy responses are entered but unpublished; confirm the final binary's data practices before publishing.
 - Age rating and content rights responses require a verified submission declaration. Accessibility features require a native device audit before claiming support.
