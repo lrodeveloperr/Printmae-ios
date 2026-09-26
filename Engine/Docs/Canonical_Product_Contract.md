@@ -301,7 +301,7 @@ Do not show a tutorial carousel. Open directly on the preparation screen with:
 
 - primary action `ファイルを選ぶ`;
 - secondary action `サンプルで試す`;
-- a one-line privacy promise `書類はこのiPhone内で処理されます`;
+- a one-line privacy promise `書類はこの端末内で処理されます`;
 - no paywall.
 
 ---

@@ -109,7 +109,7 @@ struct PrintMaeRoot: View {
         )) {
             Button("閉じる", role: .cancel) { model.errorMessage = nil }
         } message: { Text(model.errorMessage ?? "") }
-        .confirmationDialog("このiPhone内の作業用書類と履歴をすべて削除します。購入情報は削除されません。", isPresented: $confirmDelete) {
+        .confirmationDialog("この端末内の作業用書類と履歴をすべて削除します。購入情報は削除されません。", isPresented: $confirmDelete) {
             Button("すべての書類を削除", role: .destructive) { model.deleteAll() }
             Button("キャンセル", role: .cancel) { }
         }
@@ -134,7 +134,7 @@ struct PrintMaeRoot: View {
         switch (model.screen, slot) {
         case (.prepare, .header): header("印刷する前に、PDFを確認。", caption: "失敗しやすい余白・向き・サイズを先に確認します。")
         case (.prepare, .primaryContent): prepareContent
-        case (.prepare, .footer): caption("書類はこのiPhone内で処理されます")
+        case (.prepare, .footer): caption("書類はこの端末内で処理されます")
         case (.report, .header): header("印刷前チェック", caption: model.job?.source?.originalDisplayName)
         case (.report, .status): reportStatus
         case (.report, .primaryContent): reportContent
@@ -438,7 +438,7 @@ struct PrintMaeRoot: View {
                     HStack {
                         VStack(alignment: .leading, spacing: 5) {
                             Text(job.source?.originalDisplayName ?? "書類").font(.body).lineLimit(1)
-                            Text("\(job.updatedAt.formatted(date: .abbreviated, time: .shortened)) ・ \(paperName(job.targetPaper))")
+                            Text("\(job.updatedAt.formatted(Date.FormatStyle(date: .abbreviated, time: .shortened).locale(Locale(identifier: "ja_JP")))) ・ \(paperName(job.targetPaper))")
                                 .font(.footnote).foregroundStyle(.secondary)
                         }
                         Spacer()
@@ -603,7 +603,16 @@ private struct PDFPaperPreview: View {
             .frame(maxWidth: .infinity)
         }
         .frame(height: min(UIScreen.main.bounds.width - 32, 600) / ratio)
-        .accessibilityLabel("\(paper.rawValue)の\(pageIndex + 1)ページ目のプレビュー")
+        .accessibilityLabel("\(paperLabel)の\(pageIndex + 1)ページ目のプレビュー")
+    }
+
+    private var paperLabel: String {
+        switch paper {
+        case .a4Portrait: "A4・縦"
+        case .a4Landscape: "A4・横"
+        case .b5Portrait: "B5・縦"
+        case .b5Landscape: "B5・横"
+        }
     }
 }
 

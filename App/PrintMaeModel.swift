@@ -255,7 +255,10 @@ final class PrintMaeModel: ObservableObject {
     }
 
     func loadPrice() async {
-        do { productPrice = try await purchase.productDisplay().displayPrice }
+        do {
+            let product = try await purchase.productDisplay()
+            productPrice = product.displayPrice
+        }
         catch { show(error) }
     }
 
