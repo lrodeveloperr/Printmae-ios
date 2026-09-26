@@ -1,6 +1,6 @@
 # プリント前 — App Store Connect 1.0
 
-This is the Japanese release listing copy. The App Store Connect version remains a draft until the required reviewer contact and authentic build screenshots are supplied.
+This is the Japanese release listing copy. The corrected description and App Review notes are saved in App Store Connect. The version remains a draft until the native build and authentic screenshots are supplied.
 
 | Field | Value |
 | --- | --- |
@@ -85,7 +85,7 @@ Use a fictional document that genuinely triggers the displayed findings. The bui
 
 ## Submission gates
 
-- Required reviewer first name, last name, phone, and email are absent in App Store Connect; the corrected version description and reviewer notes cannot be saved until those fields are supplied.
+- App Review contact and the corrected Japanese version copy are saved in App Store Connect. Keep personal contact details in App Store Connect rather than this public repository.
 - No native iOS build or authentic iPhone/iPad screenshots have been uploaded. The purchase review screenshot must show the actual paywall.
 - The first native GitHub Actions build cannot resolve the private `Swift-UI-shell-ios` package from the runner. Grant that workflow read access to the package repository before using its build result to capture screenshots.
 - App privacy responses are entered but unpublished; confirm the final binary's data practices before publishing.
