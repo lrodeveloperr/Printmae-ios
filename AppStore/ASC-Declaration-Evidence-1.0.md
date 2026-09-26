@@ -34,4 +34,4 @@ Apple defines collection as data transmitted off-device for developer/partner ac
 
 - The first macOS CI build failed because the runner could not access the private GoodUseShell repository; there is no signed final binary to audit yet.
 - Age rating and content rights are not saved in App Store Connect. Prior automatic approval review rejected blanket answers without verified facts; do not treat this proposed answer map as a submitted declaration.
-- App Privacy is drafted but unpublished. No release submission has occurred.
+- App Privacy is drafted but unpublished. Automatic approval review rejected initiating Publish because it is a consequential accuracy and legal-compliance attestation without the account holder's explicit approval of the specific answer. No release submission has occurred.
