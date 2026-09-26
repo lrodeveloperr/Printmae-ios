@@ -1153,7 +1153,7 @@ Omit at launch. It does not affect search ranking and creates stale-copy work wi
 ```text
 コンビニでPDFを印刷する前に、余白・向き・用紙サイズ・ファイル容量を確認し、印刷しやすいPDFに整えるアプリです。
 
-プリント前は、プリンターへ直接送るアプリではありません。書類をこのiPhone内で確認・調整し、完成した印刷用PDFを公式の印刷アプリまたはFilesへ共有します。
+プリント前は、プリンターへ直接送るアプリではありません。書類をこの端末内で確認・調整し、完成した印刷用PDFを印刷アプリへ共有するか、「ファイル」に保存します。
 
 ■ 印刷前に確認
 ・ページの向きと用紙サイズ
@@ -1177,7 +1177,7 @@ Omit at launch. It does not affect search ranking and creates stale-copy work wi
 作成したPDFをもう一度開いて、ページ数・用紙サイズ・容量を確認してから共有します。元のファイルは変更しません。
 
 ■ プライバシー
-書類は端末内で処理されます。アカウント登録、広告、追跡、書類のアップロードはありません。
+書類は端末内で処理されます。アカウント登録、広告、追跡はありません。本アプリは処理のために書類をアップロードしません。共有時の宛先は利用者がiOSで選びます。
 
 分析とプレビューは無料です。最初の3回は印刷用PDFを書き出して試せます。その後は、買い切りのプリント前 Proで回数制限なく書き出せます。購入価格はアプリ内に表示されるApp Storeの価格をご確認ください。
 
@@ -1189,60 +1189,30 @@ Omit at launch. It does not affect search ranking and creates stale-copy work wi
 ```text
 Before printing a PDF at a convenience store, check its margins, orientation, paper size, and file capacity, then create a PDF that is easier to print.
 
-PrintMae does not send files directly to a printer. It checks and repairs documents on this iPhone, then shares the finished print PDF to an official printing app or Files.
+PrintMae does not send files directly to a printer. It checks and repairs documents on device, then lets the user choose a printing app or Files through iOS sharing.
 ```
 
-### Support and policy URLs to create
+### Live support and policy URLs
 
 - Support: `https://worksbienstudios.com/customerservice`
-- Marketing: `https://worksbienstudios.com/apps/printmae`
-- Privacy: `https://worksbienstudios.com/apps/printmae/privacy`
+- Marketing: `https://lrodeveloperr.github.io/Printmae-ios/`
+- Privacy: `https://lrodeveloperr.github.io/Printmae-ios/privacy/`
 
-Do not place these in App Store Connect until the pages are live, accurate, and match the final binary.
+These are saved in App Store Connect. Recheck the signed binary and live policy before App Review.
 
 ---
 
 ## 15. Screenshot plan
 
-Use exactly three Japanese iPhone portrait screenshots for launch. Use authentic final UI, consistent sample data, and the 6.9-inch accepted master size current at submission. As of 2026-09-25, Apple accepts 1260×2736, 1290×2796, or 1320×2868 portrait for the listed 6.9-inch class; recheck immediately before upload.
+Capture authentic final UI on iPhone and iPad after a native build. Use fictional documents that genuinely trigger any shown findings. The built-in two-page A4 sample is clean and must not be depicted with warnings. Verify Apple's accepted sizes at upload.
 
-### Screenshot 1 — Outcome
+Suggested Japanese captions for the first three iPhone images:
 
-**Caption:** `コンビニで刷る前に、印刷ミスを見つける`
+1. `コンビニで印刷する前に、PDFの問題を確認`
+2. `余白・向き・サイズをまとめて整える`
+3. `書き出し後も確認して、印刷アプリへ共有`
 
-**Show:** S05 with `履歴書_最終.pdf`, A4 portrait, 2 pages, warning state, and three concrete rows:
-
-- `2ページ目が横向きです`
-- `下の余白が狭くなっています`
-- `ファイルが10 MBを超えています`
-
-Primary button visible: `まとめて自動で整える`.
-
-**Conversion purpose:** instantly explains why the app exists.
-
-### Screenshot 2 — Easiest path
-
-**Caption:** `余白・向き・サイズをワンタップで整える`
-
-**Show:** S07 physical preview in before/after comparison. The corrected page is centred inside an A4 safe-area overlay. Bottom proof row: `A4・縦｜7.4 MB｜2ページ`.
-
-**Conversion purpose:** shows visible repair rather than abstract feature claims.
-
-### Screenshot 3 — Differentiator and completion
-
-**Caption:** `印刷方法に合わせて確認し、公式アプリへ共有`
-
-**Show:** S11 verified result with four proof rows and the primary share action. Include the authentic free-state label `無料書き出し：残り2回` if the shown build displays it.
-
-**Conversion purpose:** makes the boundary clear: verified preparation first, official transport second.
-
-### Screenshot rules
-
-- Do not show a splash screen, tutorial, paywall, chain logo, fake review, award, ranking, price, or “100% guaranteed.”
-- Do not show a feature absent from the submitted build.
-- Use fictional document content and names.
-- Ensure the screenshot copy and app UI are Japanese, not machine-translated English.
-- The first screenshot must remain legible at App Store search-result size.
+Show actual analysis, paper preview, and verified export states; do not invent proof rows or values. Avoid chain branding and other media without rights.
 
 ---
 
@@ -1265,25 +1235,18 @@ Primary button visible: `まとめて自動で整える`.
 | Encryption/export | Use Apple system cryptography/file protection only; confirm the final Xcode export-compliance answer |
 | Content rights | Bundled sample and marketing documents must be original or licensed |
 
-### Review notes draft
+### Saved App Review notes — Japanese
 
 ```text
-PrintMae prepares PDFs for Japanese convenience-store printing. It does not connect to or control a physical printer and it is not affiliated with a convenience-store chain.
+アカウント登録や専用ハードウェアは不要です。iPhoneとiPadに対応しています。
 
-No account or hardware is required for review.
+確認手順：
+1. 「サンプルで試す」を選択し、PDFの分析結果を確認します。
+2. 「用紙プレビューを見る」で用紙と安全範囲を確認します。
+3. 「印刷用PDFを書き出す」から印刷方法を選び、書き出します。最初の3回は無料です。
+4. iOSの共有シートで印刷アプリへの共有または「ファイル」に保存できます。
 
-Test path:
-1. Launch the app.
-2. Tap “サンプルで試す”.
-3. Review the detected orientation, margin, and file-size issues.
-4. Tap “まとめて自動で整える”.
-5. Open “実寸プレビュー”.
-6. Tap “印刷用PDFを書き出す”. The first three verified exports are free.
-7. Use the iOS share sheet or save the file to Files.
-
-All document processing occurs locally. The app contains no account, ads, tracking, analytics SDK, document upload, or location access.
-
-The non-consumable In-App Purchase “プリント前 Pro（買い切り）” unlocks unlimited verified exports after the first three free exports. Its price is loaded from StoreKit. Restore Purchase is available under Settings and on the paywall.
+書類は端末内で処理されます。広告、追跡、解析SDK、位置情報の利用はありません。本アプリは処理のために書類をアップロードしません。共有先は利用者がiOSで選びます。4回目以降の書き出しで買い切りのプリント前 Proが案内されます。
 ```
 
 ### App Store Connect draft answers
@@ -1302,11 +1265,11 @@ data_collection_expected: none
 iap_present: true
 iap_type: non_consumable
 subscription_present: false
-content_rights: owns_or_licenses_all_bundled_content
+content_rights: no_third_party_app_supplied_content
 uses_only_standard_apple_encryption: true
 ```
 
-These are draft facts. Final answers must be checked against the signed archive, privacy manifest, SDK list, shell, policies, and live App Store Connect record.
+Age rating 4+ and Content Rights No are saved in App Store Connect; Data Not Collected remains drafted but unpublished. Recheck against the signed archive, privacy manifest, SDK inventory, shell, policies, and live App Store Connect record before release.
 
 ---
 
