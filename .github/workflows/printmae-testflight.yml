@@ -51,6 +51,7 @@ jobs:
             -authenticationKeyID YLD8FY354W \
             -authenticationKeyIssuerID 9f49640c-f575-42b4-b0c7-8e3194aef419 \
             DEVELOPMENT_TEAM=49SQ3XQ68Q \
+            CODE_SIGNING_ALLOWED=NO \
             archive
 
           cat > "$RUNNER_TEMP/ExportOptions.plist" <<'PLIST'
