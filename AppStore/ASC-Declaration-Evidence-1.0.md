@@ -1,6 +1,6 @@
 # PrintMae 1.0 — App Store Connect declaration evidence
 
-Reviewed 2026-09-26. This is a decision record for the Japanese-only iOS listing. The age and content-rights answers are saved in App Store Connect; App Privacy is drafted but unpublished. Recheck against the signed build before App Review.
+Reviewed 2026-09-26. This is a decision record for the Japanese-only iOS listing. The age and content-rights answers are saved in App Store Connect; App Privacy is published as Data Not Collected. Recheck against the signed build before App Review.
 
 ## Age rating answer map
 
@@ -24,11 +24,11 @@ Interpretation: the content-rights declaration concerns third-party material sup
 
 ## App Privacy
 
-**Drafted in App Store Connect:** Data Not Collected; Japanese privacy URL `https://lrodeveloperr.github.io/Printmae-ios/privacy/`. **Not yet published.**
+**Published in App Store Connect on 2026-09-26:** Data Not Collected; Japanese privacy URL `https://lrodeveloperr.github.io/Printmae-ios/privacy/`. Publication was verified after reloading the page.
 
 Evidence: `App/Resources/PrivacyInfo.xcprivacy` declares no tracking and no collected data. App/engine source has no account, analytics/ads SDK, document upload, network client, or embedded web view. Documents and analysis remain local; explicit iOS sharing goes to a user-selected destination. `StoreKit 2` handles purchase and the app locally records entitlement/export count. The linked GoodUseShell at pinned revision `6de35c55` is WorksBien-owned, has no external package dependencies in `Package.swift`, and its seven Swift source files contain no network, analytics, or advertising client. The app disables its ad rail.
 
-Apple defines collection as data transmitted off-device for developer/partner access beyond real-time servicing: https://developer.apple.com/app-store/app-privacy-details/. The final Publish dialog asks the account holder to attest that the responses are accurate and comply with guidelines and law. The source-level answer is “Data Not Collected” on the current app and linked shell; verify the signed app and its dependencies before release and update this record if the final binary differs.
+Apple defines collection as data transmitted off-device for developer/partner access beyond real-time servicing: https://developer.apple.com/app-store/app-privacy-details/. The account holder approved and accepted the final Publish dialog, which attests that the responses are accurate and comply with guidelines and law and will be updated if practices change. The source-level answer is “Data Not Collected” on the current app and linked shell; verify the signed app and its dependencies before release and update this record if the final binary differs.
 
 ## Code → policy → listing reconciliation
 
@@ -47,4 +47,4 @@ The former absolute “no document upload” phrasing was clarified across the p
 
 - The first macOS CI build failed because the runner could not access the private GoodUseShell repository; there is no signed final binary to audit yet.
 - Age rating (4+) and Content Rights (No) were saved and verified after reloading App Store Connect on 2026-09-26. Their basis is the code, policy, and listing reconciliation above.
-- App Privacy remains drafted as Data Not Collected. The final Publish dialog explicitly asks the account holder to agree that the answers are accurate and legally compliant and to maintain them if practices change. The control-browser skill requires confirmation at action time for accepting such an agreement. An earlier automatic approval review also rejected starting Publish before the comparison. The source comparison is now complete, but final-binary verification is still unavailable; no final privacy attestation or release submission has occurred.
+- App Privacy was published as Data Not Collected on 2026-09-26 following explicit account-holder approval of the final attestation. The published state was verified after reloading App Store Connect. Final-binary verification is still unavailable; no app version was submitted for review.
