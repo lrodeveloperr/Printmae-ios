@@ -41,7 +41,7 @@ Apple defines collection as data transmitted off-device for developer/partner ac
 | Content and rights | Sample PDF generated locally; no feed/content service; profile URLs are citations, not fetched content | Users responsible for document rights | Independent utility; no direct printer control | Aligned under interpretation above |
 | Age content | No account, browser, social or messaging; built-in sample has no mature content | No contrary claim | Utility description | No contrary content in app-supplied material |
 
-The former absolute “no document upload” phrasing was clarified across the policy, marketing page, Japanese listing, and reviewer notes: the app does not upload a document for processing, while iOS sharing can send it to a user-selected recipient. Source-level consistency does not prove the final binary or all possible user-imported documents.
+The former absolute “no document upload” phrasing was clarified across the policy, marketing page, Japanese listing, reviewer notes, and canonical product contract: the app does not upload a document for processing, while iOS sharing can send it to a user-selected recipient. Source-level consistency does not prove the final binary or all possible user-imported documents.
 
 ## Current gates
 
