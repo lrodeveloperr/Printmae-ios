@@ -45,7 +45,6 @@ private enum Skin {
 struct PrintMaeRoot: View {
     @ObservedObject var model: PrintMaeModel
     @Environment(\.horizontalSizeClass) private var sizeClass
-    @State private var importing = false
     @State private var pendingImages: [URL] = []
     @State private var orderingImages = false
     @State private var password = ""
@@ -88,7 +87,7 @@ struct PrintMaeRoot: View {
             }
             .navigationTitle(title)
         }
-        .fileImporter(isPresented: $importing, allowedContentTypes: [.pdf, .jpeg, .png, .heic], allowsMultipleSelection: true) { result in
+        .fileImporter(isPresented: $model.importing, allowedContentTypes: [.pdf, .jpeg, .png, .heic], allowsMultipleSelection: true) { result in
             switch result {
             case .success(let urls):
                 if urls.count > 1 && urls.allSatisfy({ $0.pathExtension.lowercased() != "pdf" }) {
@@ -173,7 +172,7 @@ struct PrintMaeRoot: View {
         } else {
             switch model.screen {
             case .prepare:
-                GoodUsePrimaryButton(L("ファイルを選ぶ")) { importing = true }
+                GoodUsePrimaryButton(L("ファイルを選ぶ")) { model.importing = true }
                     .accessibilityIdentifier("prepare.import")
             case .report:
                 if model.job?.report?.issues.contains(where: { $0.suggestedFix != nil }) == true {
@@ -471,8 +470,12 @@ struct PrintMaeRoot: View {
                     HStack {
                         VStack(alignment: .leading, spacing: 5) {
                             Text(job.source?.originalDisplayName ?? L("書類")).font(.body).lineLimit(1)
-                            Text(String(format: L("%@ ・ %@"), job.updatedAt.formatted(Date.FormatStyle(date: .abbreviated, time: .shortened).locale(Locale(identifier: uiLanguage == "en" ? "en_US" : "ja_JP"))), paperName(job.targetPaper)))
+                            Text(String(format: L("%@ ・ %@ ・ %@"), job.updatedAt.formatted(Date.FormatStyle(date: .abbreviated, time: .shortened).locale(Locale(identifier: uiLanguage == "en" ? "en_US" : "ja_JP"))), paperName(job.targetPaper), historyStatus(job)))
                                 .font(.footnote).foregroundStyle(.secondary)
+                            if !hasLocalFile(job) {
+                                Text(L("再利用するにはファイルを選び直してください"))
+                                    .font(.footnote).foregroundStyle(.secondary)
+                            }
                         }
                         Spacer()
                         Image(systemName: "chevron.right").foregroundStyle(.secondary)
@@ -583,6 +586,22 @@ struct PrintMaeRoot: View {
         let formatter = ByteCountFormatter()
         formatter.countStyle = .file
         return formatter.string(fromByteCount: count)
+    }
+
+    private func hasLocalFile(_ job: PrintJobSnapshot) -> Bool {
+        if job.export?.parts.allSatisfy({ FileManager.default.fileExists(atPath: $0.url.path) }) == true {
+            return true
+        }
+        guard let name = job.source?.stagedRelativePath,
+              name == URL(fileURLWithPath: name).lastPathComponent,
+              let repository = model.repository else { return false }
+        return FileManager.default.fileExists(atPath: repository.stagingRoot.appendingPathComponent(name).path)
+    }
+
+    private func historyStatus(_ job: PrintJobSnapshot) -> String {
+        if job.phase == .completed || job.phase == .exportVerified { return L("完了") }
+        if job.report?.readiness == .blocked { return L("要確認") }
+        return L("作業中")
     }
 
     private func paperName(_ paper: PaperSpec) -> String {

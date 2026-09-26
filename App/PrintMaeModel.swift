@@ -9,6 +9,7 @@ final class PrintMaeModel: ObservableObject {
     enum Screen: String { case prepare, report, fix, preview, method, result, history, settings }
 
     @Published var screen: Screen = .prepare
+    @Published var importing = false
     @Published var job: PrintJobSnapshot?
     @Published var jobs: [PrintJobSnapshot] = []
     @Published var busyLabel: String?
@@ -72,7 +73,10 @@ final class PrintMaeModel: ObservableObject {
         let days = UserDefaults.standard.object(forKey: "retentionDays") == nil
             ? 1 : UserDefaults.standard.integer(forKey: "retentionDays")
         _ = try? await repository.cleanupCompletedJobs(olderThan: Date().addingTimeInterval(-Double(days) * 24 * 3600))
-        if let restored = try? await engine.resumeActiveJob() { accept(restored) }
+        if let restored = try? await engine.resumeActiveJob() {
+            accept(restored)
+            if screen == .preview { await makePreview() }
+        }
         await refreshHistory()
     }
 
@@ -90,9 +94,9 @@ final class PrintMaeModel: ObservableObject {
             do {
                 let result: PrintJobSnapshot
                 if urls.count == 1 && urls[0].pathExtension.lowercased() == "pdf" {
-                    result = try await engine.importAndAnalyse(sourceURL: urls[0], target: defaultPaper)
+                    result = try await engine.importAndAnalyse(sourceURL: urls[0], profileID: defaultProfile, target: defaultPaper)
                 } else {
-                    result = try await engine.importImagesAndAnalyse(sourceURLs: urls, target: defaultPaper)
+                    result = try await engine.importImagesAndAnalyse(sourceURLs: urls, profileID: defaultProfile, target: defaultPaper)
                 }
                 accept(result)
                 await refreshHistory()
@@ -343,9 +347,12 @@ final class PrintMaeModel: ObservableObject {
                 screen = .result
             } else if (try? await repository.stagedDocument(for: item.id)) != nil {
                 accept(item)
+                if screen == .preview { await makePreview() }
             } else {
-                errorMessage = L("元の書類は保存されていません。同じ設定で新しいファイルを選んでください。")
+                UserDefaults.standard.set(item.targetPaper.rawValue, forKey: "defaultPaper")
+                UserDefaults.standard.set(item.selectedProfileID, forKey: "defaultProfile")
                 screen = .prepare
+                importing = true
             }
         }
     }
@@ -400,5 +407,9 @@ final class PrintMaeModel: ObservableObject {
 
     private var defaultPaper: PaperSpec {
         PaperSpec(rawValue: UserDefaults.standard.string(forKey: "defaultPaper") ?? "a4Portrait") ?? .a4Portrait
+    }
+
+    private var defaultProfile: String {
+        UserDefaults.standard.string(forKey: "defaultProfile") ?? ProfileCatalog.genericID
     }
 }

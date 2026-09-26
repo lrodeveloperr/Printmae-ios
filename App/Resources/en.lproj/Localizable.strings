@@ -1,4 +1,8 @@
 "%@ ・ %@" = "%@ · %@";
+"%@ ・ %@ ・ %@" = "%@ · %@ · %@";
+"再利用するにはファイルを選び直してください" = "Choose the file again to reuse these settings";
+"作業中" = "In progress";
+"要確認" = "Needs review";
 "%@の%dページ目のプレビュー" = "Preview of %@, page %d";
 "%@｜%dページ" = "%@ | %d pages";
 "%dファイル｜%dページ｜%@" = "%d files | %d pages | %@";

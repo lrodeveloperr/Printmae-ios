@@ -55,6 +55,32 @@ final class IntegrationTests: XCTestCase {
         XCTAssertEqual(recovered?.editRecipe, job.editRecipe)
     }
 
+    func testRapidEditsReadPendingRecipeBeforeDebounceAndSurviveFlush() async throws {
+        let base = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: base) }
+        let repository = try FileJobRepository(root: base.appendingPathComponent("Engine"))
+        let engine = PrintPreparationEngine(
+            importer: LocalDocumentImporter(stagingRoot: repository.stagingRoot),
+            jobs: repository,
+            entitlements: FreeExportEntitlementLedger(store: MemoryLedgerDataStore())
+        )
+        let sample = base.appendingPathComponent("sample.pdf")
+        try SampleDocumentFactory.makeA4PDF(at: sample)
+        let job = try await engine.importAndAnalyse(sourceURL: sample)
+        _ = try await engine.applyFix(jobID: job.id, action: .normalizePaper(.a4Portrait))
+        let second = try await engine.applyFix(
+            jobID: job.id,
+            action: .addMargins(EdgeInsetsMM(top: 5, leading: 5, bottom: 5, trailing: 5))
+        )
+        XCTAssertEqual(second.editRecipe.actions.count, 2)
+        let pending = try await repository.require(job.id)
+        XCTAssertEqual(pending.editRecipe.actions.count, 2)
+        try await engine.flushAutosave(jobID: job.id)
+        let reloaded = try FileJobRepository(root: base.appendingPathComponent("Engine"))
+        let durable = try await reloaded.require(job.id)
+        XCTAssertEqual(durable.editRecipe.actions.count, 2)
+    }
+
     func testCleanupDeletesExpiredUnkeptSourceButNotKeptProject() async throws {
         let base = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: base) }
@@ -81,6 +107,9 @@ final class IntegrationTests: XCTestCase {
         let removed = try await repository.cleanupCompletedJobs(olderThan: old.addingTimeInterval(86_400))
         XCTAssertEqual(removed, 1)
         XCTAssertFalse(FileManager.default.fileExists(atPath: source.path))
+        let history = try await repository.history()
+        XCTAssertEqual(history.count, 1)
+        XCTAssertEqual(history.first?.source?.originalDisplayName, "private.pdf")
 
         job = PrintJobSnapshot(
             phase: .completed,

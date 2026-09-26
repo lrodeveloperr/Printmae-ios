@@ -58,6 +58,9 @@ public actor FileJobRepository: JobRepository {
     }
 
     public func require(_ id: UUID) async throws -> PrintJobSnapshot {
+        // A rapid second edit must see the first edit even while its debounced
+        // disk write is pending. The actor owns both the pending snapshot and IO.
+        if let pending = pendingSnapshots[id] { return pending }
         let url = jobURL(id)
         guard fileManager.fileExists(atPath: url.path) else { throw AppError(.jobNotFound, retryable: false) }
         do {
@@ -151,13 +154,23 @@ public actor FileJobRepository: JobRepository {
                   job.phase == .completed,
                   !job.keepProject,
                   job.updatedAt <= cutoff else { continue }
+            var removedWorkingFile = false
             if let source = job.source,
                source.stagedRelativePath == URL(fileURLWithPath: source.stagedRelativePath).lastPathComponent {
-                try? fileManager.removeItem(at: stagingRoot.appendingPathComponent(source.stagedRelativePath))
+                let staged = stagingRoot.appendingPathComponent(source.stagedRelativePath)
+                if fileManager.fileExists(atPath: staged.path) {
+                    try fileManager.removeItem(at: staged)
+                    removedWorkingFile = true
+                }
             }
-            try? fileManager.removeItem(at: outputsRoot.appendingPathComponent(job.id.uuidString))
-            try? fileManager.removeItem(at: file)
-            cleaned += 1
+            let output = outputsRoot.appendingPathComponent(job.id.uuidString)
+            if fileManager.fileExists(atPath: output.path) {
+                try fileManager.removeItem(at: output)
+                removedWorkingFile = true
+            }
+            // Keep the metadata row so History can explain that the working
+            // copy expired and allow the same paper/profile to be used again.
+            if removedWorkingFile { cleaned += 1 }
         }
         return cleaned
     }
