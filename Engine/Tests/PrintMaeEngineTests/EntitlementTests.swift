@@ -2,6 +2,25 @@ import XCTest
 @testable import PrintMaeEngine
 
 final class EntitlementTests: XCTestCase {
+    func testKeychainLedgerDataStoreReadWriteRoundTrip() throws {
+        let account = "test-\(UUID().uuidString)"
+        let store = KeychainLedgerDataStore(service: "com.worksbien.printmae.entitlements.test", account: account)
+
+        // Nothing has been written yet: read() must return nil (the errSecItemNotFound branch),
+        // not throw.
+        XCTAssertNil(try store.read())
+
+        let first = Data("hello".utf8)
+        try store.write(first)
+        XCTAssertEqual(try store.read(), first)
+
+        // A second write to the same account goes through SecItemUpdate directly (the item
+        // already exists), a different path than the first write's add-after-not-found.
+        let second = Data("world".utf8)
+        try store.write(second)
+        XCTAssertEqual(try store.read(), second)
+    }
+
     func testThreeDistinctVerifiedExportsConsumeExactlyThree() async throws {
         let ledger = FreeExportEntitlementLedger(store: MemoryLedgerDataStore())
         for revision in 0 ..< 3 {

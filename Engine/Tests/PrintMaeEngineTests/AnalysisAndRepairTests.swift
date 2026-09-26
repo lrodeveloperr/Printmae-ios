@@ -365,6 +365,24 @@ final class AnalysisAndRepairTests: XCTestCase {
             target: .a4Portrait
         )
         XCTAssertTrue(underReport.issues.contains { $0.code == .lowImageResolution }, "issues=\(underReport.issues.map(\.code.rawValue))")
+
+        // Well above 150 DPI, isolated: must not be flagged either. Without this third point, a
+        // boundary shift and an inequality flip (`<` -> `!=`) look identical at only the 150/149.9
+        // pair, since neither differs from `<` at exactly those two values.
+        let wellAbove = SourceDescriptor(
+            kind: .imagePDF,
+            stagedRelativePath: source.lastPathComponent,
+            originalDisplayName: "single.pdf",
+            byteCount: 1_000,
+            sha256: "fixture",
+            effectiveImageDPIByPage: [0: 1_000]
+        )
+        let wellAboveReport = try await NativePreflightAnalyser(now: { Self.fixedDate }).analyse(
+            document: StagedDocument(descriptor: wellAbove, url: source),
+            profile: profile,
+            target: .a4Portrait
+        )
+        XCTAssertFalse(wellAboveReport.issues.contains { $0.code == .lowImageResolution }, "issues=\(wellAboveReport.issues.map(\.code.rawValue))")
     }
 
     func testSingleBlockingIssueAloneYieldsBlockedReadiness() async throws {

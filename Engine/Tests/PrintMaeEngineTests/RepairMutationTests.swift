@@ -353,7 +353,19 @@ final class RepairMutationTests: XCTestCase {
         // If the rasterization steps (scaling, filling, transforming, drawing the source page,
         // or embedding the JPEG image) were silently skipped, this would render as a blank
         // (all-white) page and the content-bounds detector would find nothing.
-        let bounds = PDFContentBoundsDetector.detect(page: page, cropBox: page.getBoxRect(.cropBox))
-        XCTAssertNotNil(bounds, "Rasterized output page must not be blank")
+        let cropBox = page.getBoxRect(.cropBox)
+        guard let bounds = PDFContentBoundsDetector.detect(page: page, cropBox: cropBox) else {
+            XCTFail("Rasterized output page must not be blank")
+            return
+        }
+        // A weaker "not blank" check alone would miss a mutation that skips only the
+        // background fill/clear: an uninitialized (or un-cleared) bitmap context reads back
+        // as non-white everywhere, so the *entire* page would register as "content" instead of
+        // just the drawn shapes within their safe-area margin. Requiring the detected bounds to
+        // be meaningfully smaller than the full page catches that case specifically, while still
+        // passing for a correctly rasterized page (the sample content plus safe-area insets
+        // never reach the page edges).
+        XCTAssertLessThan(bounds.width, cropBox.width * 0.95, "content=\(bounds) crop=\(cropBox)")
+        XCTAssertLessThan(bounds.height, cropBox.height * 0.95, "content=\(bounds) crop=\(cropBox)")
     }
 }
