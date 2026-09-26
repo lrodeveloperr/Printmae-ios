@@ -13,8 +13,8 @@ targets:
     type: application
     platform: iOS
     sources:
-      - path: App
-        excludes: [Resources, DEPENDENCIES.md]
+      - path: App/PrintMaeApp.swift
+      - path: App/PrintMaeModel.swift
       - path: App/Resources
     dependencies:
       - package: GoodUseShell
@@ -28,12 +28,8 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.worksbien.printmae
         SWIFT_VERSION: '5.9'
         TARGETED_DEVICE_FAMILY: '1,2'
-        INFOPLIST_KEY_CFBundleDisplayName: プリント前
-        INFOPLIST_KEY_LSApplicationQueriesSchemes: []
-        INFOPLIST_KEY_UISupportsDocumentBrowser: NO
-        INFOPLIST_KEY_UIApplicationSupportsDocumentBrowser: NO
-        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: UIInterfaceOrientationPortrait
-        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight
+        MARKETING_VERSION: 0.1.0
+        CURRENT_PROJECT_VERSION: 1
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         DEVELOPMENT_LANGUAGE: ja
         CODE_SIGN_STYLE: Automatic
@@ -42,6 +38,12 @@ targets:
       path: App/Info.plist
       properties:
         CFBundleDevelopmentRegion: ja
+        CFBundleDisplayName: プリント前
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        'UISupportedInterfaceOrientations~ipad':
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
         CFBundleDocumentTypes:
           - CFBundleTypeName: PDF
             LSItemContentTypes: [com.adobe.pdf]
