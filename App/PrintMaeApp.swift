@@ -130,7 +130,7 @@ struct PrintMaeRoot: View {
         case .prepare: L("プリント前")
         case .report: L("印刷前チェック")
         case .fix: L("自動修正の確認")
-        case .preview: L("実寸プレビュー")
+        case .preview: L("用紙プレビュー")
         case .method: L("印刷方法")
         case .result: L("準備完了")
         case .history: L("履歴")
@@ -149,7 +149,7 @@ struct PrintMaeRoot: View {
         case (.report, .footer): copierFooter
         case (.fix, .header): header(L("適用する修正"), caption: L("元のPDFは変更されません。"))
         case (.fix, .primaryContent): fixesContent
-        case (.preview, .header): header(L("実寸プレビュー"), caption: L("用紙の内側まで確認してください。"))
+        case (.preview, .header): header(L("用紙プレビュー"), caption: L("用紙の内側まで確認してください。"))
         case (.preview, .primaryContent): previewContent
         case (.preview, .footer): caption(L("実際の仕上がりは店頭のコピー機でも確認してください。"))
         case (.method, .header): header(L("どの方法で印刷しますか？"), caption: nil)
@@ -181,7 +181,7 @@ struct PrintMaeRoot: View {
                 if model.job?.report?.issues.contains(where: { $0.suggestedFix != nil }) == true {
                     GoodUsePrimaryButton(L("まとめて自動で整える")) { model.reviewFixes() }
                 } else {
-                    GoodUsePrimaryButton(L("実寸プレビューを見る")) { model.openPreview() }
+                    GoodUsePrimaryButton(L("用紙プレビューを見る")) { model.openPreview() }
                 }
             case .fix:
                 GoodUsePrimaryButton(L("この内容で整える")) { model.applyRecommendedFixes() }
@@ -193,7 +193,7 @@ struct PrintMaeRoot: View {
             case .method:
                 GoodUsePrimaryButton(L("この方法で書き出す")) { model.export() }
             case .result:
-                GoodUsePrimaryButton(L("公式アプリまたはFilesへ共有")) { model.openShare() }
+                GoodUsePrimaryButton(L("印刷アプリへ共有・「ファイル」に保存")) { model.openShare() }
             case .history, .settings: EmptyView()
             }
         }
@@ -568,7 +568,7 @@ struct PrintMaeRoot: View {
             Text(L("書き出しの準備ができました")).font(.subheadline).foregroundStyle(.secondary)
             Text(L("プリント前 Proを買い切りで利用")).font(.title2.bold())
             Label(L("印刷用PDFを何度でも書き出し"), systemImage: "checkmark")
-            Label(L("自動調整・圧縮・分割を制限なく利用"), systemImage: "checkmark")
+            Label(L("買い切りで書き出し回数の制限を解除"), systemImage: "checkmark")
             Label(L("広告なし・サブスクリプションなし"), systemImage: "checkmark")
             if let price = model.productPrice {
                 GoodUsePrimaryButton(String(format: L("買い切りでProにする — %@"), price)) { model.buy() }
