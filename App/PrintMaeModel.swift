@@ -60,7 +60,7 @@ final class PrintMaeModel: ObservableObject {
         } catch {
             repository = nil
             engine = nil
-            errorMessage = "作業フォルダを準備できませんでした。空き容量を確認して、もう一度起動してください。"
+            errorMessage = L("作業フォルダを準備できませんでした。空き容量を確認して、もう一度起動してください。")
         }
     }
 
@@ -84,7 +84,7 @@ final class PrintMaeModel: ObservableObject {
 
     func importFiles(_ urls: [URL]) {
         guard let engine, !urls.isEmpty, !isBusy else { return }
-        busyLabel = "ページを確認しています"
+        busyLabel = L("ページを確認しています")
         errorMessage = nil
         Task {
             do {
@@ -113,7 +113,7 @@ final class PrintMaeModel: ObservableObject {
 
     func unlock(_ password: String) {
         guard let engine, let id = activeID, !isBusy else { return }
-        busyLabel = "ページを確認しています"
+        busyLabel = L("ページを確認しています")
         Task {
             do {
                 let result = try await engine.submitPassword(jobID: id, password: password)
@@ -132,7 +132,7 @@ final class PrintMaeModel: ObservableObject {
         let unique = actions.reduce(into: [FixAction]()) { result, action in
             if !result.contains(action) { result.append(action) }
         }
-        busyLabel = "印刷用PDFを整えています"
+        busyLabel = L("印刷用PDFを整えています")
         Task {
             do {
                 var result = job
@@ -148,7 +148,7 @@ final class PrintMaeModel: ObservableObject {
 
     func apply(_ action: FixAction) {
         guard let engine, let id = activeID, !isBusy else { return }
-        busyLabel = "プレビューを更新しています"
+        busyLabel = L("プレビューを更新しています")
         Task {
             do {
                 let result = try await engine.applyFix(jobID: id, action: action)
@@ -165,7 +165,7 @@ final class PrintMaeModel: ObservableObject {
 
     private func editHistory(_ action: @escaping (PrintPreparationEngine, UUID) async throws -> PrintJobSnapshot) {
         guard let engine, let id = activeID, !isBusy else { return }
-        busyLabel = "プレビューを更新しています"
+        busyLabel = L("プレビューを更新しています")
         Task {
             do {
                 accept(try await action(engine, id))
@@ -177,7 +177,7 @@ final class PrintMaeModel: ObservableObject {
 
     func openPreview() {
         guard let engine, let id = activeID, !isBusy else { return }
-        busyLabel = "実寸プレビューを準備しています"
+        busyLabel = L("実寸プレビューを準備しています")
         Task {
             do {
                 accept(try await engine.preparePreview(jobID: id))
@@ -216,7 +216,7 @@ final class PrintMaeModel: ObservableObject {
     func chooseMethod(_ id: String) {
         guard let engine, let job, !isBusy else { return }
         selectedMethod = id
-        busyLabel = "印刷方法の条件と照合しています"
+        busyLabel = L("印刷方法の条件と照合しています")
         Task {
             do {
                 let oldReadiness = job.report?.readiness
@@ -236,7 +236,7 @@ final class PrintMaeModel: ObservableObject {
 
     func export() {
         guard let engine, let repository, let id = activeID, !isBusy else { return }
-        busyLabel = "印刷用PDFを作成しています"
+        busyLabel = L("印刷用PDFを作成しています")
         Task {
             do {
                 let directory = try await repository.outputDirectory(for: id)
@@ -271,7 +271,7 @@ final class PrintMaeModel: ObservableObject {
 
     func buy() {
         guard !isBusy else { return }
-        busyLabel = "購入を確認しています"
+        busyLabel = L("購入を確認しています")
         Task {
             do {
                 let state = try await purchase.purchase()
@@ -282,7 +282,7 @@ final class PrintMaeModel: ObservableObject {
                     export()
                     return
                 }
-                else if state.status == .purchasePending { errorMessage = "購入の承認を待っています。承認後に書き出せます。" }
+                else if state.status == .purchasePending { errorMessage = L("購入の承認を待っています。承認後に書き出せます。") }
             } catch { show(error) }
             busyLabel = nil
         }
@@ -290,13 +290,13 @@ final class PrintMaeModel: ObservableObject {
 
     func restore() {
         guard !isBusy else { return }
-        busyLabel = "購入を確認しています"
+        busyLabel = L("購入を確認しています")
         Task {
             do {
                 let state = try await purchase.restore()
                 await refreshEntitlement()
                 if state.permitsUnlimitedExports { showPaywall = false }
-                else { errorMessage = "復元できる購入が見つかりませんでした。" }
+                else { errorMessage = L("復元できる購入が見つかりませんでした。") }
             } catch { show(error) }
             busyLabel = nil
         }
@@ -304,7 +304,7 @@ final class PrintMaeModel: ObservableObject {
 
     func openShare() {
         guard let engine, let id = activeID, job?.export != nil, !isBusy else { return }
-        busyLabel = "共有の準備をしています"
+        busyLabel = L("共有の準備をしています")
         Task {
             do { accept(try await engine.beginSharing(jobID: id)); showShare = true }
             catch { show(error) }
@@ -344,7 +344,7 @@ final class PrintMaeModel: ObservableObject {
             } else if (try? await repository.stagedDocument(for: item.id)) != nil {
                 accept(item)
             } else {
-                errorMessage = "元の書類は保存されていません。同じ設定で新しいファイルを選んでください。"
+                errorMessage = L("元の書類は保存されていません。同じ設定で新しいファイルを選んでください。")
                 screen = .prepare
             }
         }
@@ -352,7 +352,7 @@ final class PrintMaeModel: ObservableObject {
 
     func deleteAll() {
         guard let repository, !isBusy else { return }
-        busyLabel = "書類を削除しています"
+        busyLabel = L("書類を削除しています")
         Task {
             do {
                 try await repository.deleteAllDocumentsAndJobs()
@@ -394,8 +394,8 @@ final class PrintMaeModel: ObservableObject {
 
     private func show(_ error: Error) {
         let mapped = AppError.map(error)
-        let translated = NSLocalizedString(mapped.localizationKey, comment: "")
-        errorMessage = translated == mapped.localizationKey ? "処理を完了できませんでした。もう一度お試しください。" : translated
+        let translated = L(mapped.localizationKey)
+        errorMessage = translated == mapped.localizationKey ? L("処理を完了できませんでした。もう一度お試しください。") : translated
     }
 
     private var defaultPaper: PaperSpec {

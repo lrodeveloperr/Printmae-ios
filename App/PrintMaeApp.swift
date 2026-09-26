@@ -8,11 +8,12 @@ import PrintMaeEngine
 struct PrintMaeApp: App {
     @Environment(\.scenePhase) private var scenePhase
     @StateObject private var model = PrintMaeModel()
+    @AppStorage("uiLanguage") private var uiLanguage = "ja"
 
     var body: some Scene {
         WindowGroup {
             PrintMaeRoot(model: model)
-                .environment(\.locale, Locale(identifier: "ja"))
+                .environment(\.locale, Locale(identifier: uiLanguage == "en" ? "en" : "ja"))
                 .task { await model.start() }
                 .onChange(of: scenePhase) { _, phase in
                     if phase == .inactive, let id = model.activeID, let engine = model.engine {
@@ -50,6 +51,7 @@ struct PrintMaeRoot: View {
     @State private var password = ""
     @State private var confirmDelete = false
     @State private var customMargin = 5.0
+    @AppStorage("uiLanguage") private var uiLanguage = "ja"
     @AppStorage("defaultPaper") private var defaultPaper = "a4Portrait"
     @AppStorage("defaultProfile") private var defaultProfile = ProfileCatalog.genericID
     @AppStorage("retentionDays") private var retentionDays = 1
@@ -61,7 +63,7 @@ struct PrintMaeRoot: View {
                 currentRoute: "prepare",
                 currentScreenID: model.screen.rawValue,
                 onNavigate: { _ in },
-                label: { $0 },
+                label: { L($0) },
                 icon: { key, _ in AnyView(GoodUseVectorIcon(iconKey: key, registry: Skin.icons)) },
                 bottomPrimaryAction: (model.screen == .history || model.screen == .settings) ? nil : { AnyView(primaryAction) }
             ) { _ in
@@ -73,14 +75,14 @@ struct PrintMaeRoot: View {
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     if model.screen != .prepare {
-                        Button { model.back() } label: { Label("戻る", systemImage: "chevron.left") }
+                        Button { model.back() } label: { Label(L("戻る"), systemImage: "chevron.left") }
                             .accessibilityIdentifier("nav.back")
                     }
                 }
                 ToolbarItemGroup(placement: .topBarTrailing) {
                     if model.screen == .prepare {
-                        Button { model.screen = .history } label: { Label("履歴", systemImage: "clock.arrow.circlepath") }
-                        Button { model.screen = .settings } label: { Label("設定", systemImage: "gearshape") }
+                        Button { model.screen = .history } label: { Label(L("履歴"), systemImage: "clock.arrow.circlepath") }
+                        Button { model.screen = .settings } label: { Label(L("設定"), systemImage: "gearshape") }
                     }
                 }
             }
@@ -93,7 +95,7 @@ struct PrintMaeRoot: View {
                     pendingImages = urls
                     orderingImages = true
                 } else if urls.count > 1 {
-                    model.errorMessage = "PDFは1つずつ選んでください。画像は複数選んでまとめられます。"
+                    model.errorMessage = L("PDFは1つずつ選んでください。画像は複数選んでまとめられます。")
                 } else { model.importFiles(urls) }
             case .failure(let error): model.errorMessage = error.localizedDescription
             }
@@ -107,15 +109,15 @@ struct PrintMaeRoot: View {
         .sheet(isPresented: $model.showFilesPicker) {
             FilesExportSheet(urls: model.job?.export?.parts.map(\.url) ?? [])
         }
-        .alert("確認してください", isPresented: Binding(
+        .alert(L("確認してください"), isPresented: Binding(
             get: { model.errorMessage != nil },
             set: { if !$0 { model.errorMessage = nil } }
         )) {
-            Button("閉じる", role: .cancel) { model.errorMessage = nil }
+            Button(L("閉じる"), role: .cancel) { model.errorMessage = nil }
         } message: { Text(model.errorMessage ?? "") }
-        .confirmationDialog("この端末内の作業用書類と履歴をすべて削除します。購入情報は削除されません。", isPresented: $confirmDelete) {
-            Button("すべての書類を削除", role: .destructive) { model.deleteAll() }
-            Button("キャンセル", role: .cancel) { }
+        .confirmationDialog(L("この端末内の作業用書類と履歴をすべて削除します。購入情報は削除されません。"), isPresented: $confirmDelete) {
+            Button(L("すべての書類を削除"), role: .destructive) { model.deleteAll() }
+            Button(L("キャンセル"), role: .cancel) { }
         }
         .tint(Skin.indigo)
         .onOpenURL { model.importFiles([$0]) }
@@ -123,41 +125,41 @@ struct PrintMaeRoot: View {
 
     private var title: String {
         switch model.screen {
-        case .prepare: "プリント前"
-        case .report: "印刷前チェック"
-        case .fix: "自動修正の確認"
-        case .preview: "実寸プレビュー"
-        case .method: "印刷方法"
-        case .result: "準備完了"
-        case .history: "履歴"
-        case .settings: "設定"
+        case .prepare: L("プリント前")
+        case .report: L("印刷前チェック")
+        case .fix: L("自動修正の確認")
+        case .preview: L("実寸プレビュー")
+        case .method: L("印刷方法")
+        case .result: L("準備完了")
+        case .history: L("履歴")
+        case .settings: L("設定")
         }
     }
 
     @ViewBuilder private func slotContent(_ slot: GoodUseSlot) -> some View {
         switch (model.screen, slot) {
-        case (.prepare, .header): header("印刷する前に、PDFを確認。", caption: "失敗しやすい余白・向き・サイズを先に確認します。")
+        case (.prepare, .header): header(L("印刷する前に、PDFを確認。"), caption: L("失敗しやすい余白・向き・サイズを先に確認します。"))
         case (.prepare, .primaryContent): prepareContent
-        case (.prepare, .footer): caption("書類はこの端末内で処理されます")
-        case (.report, .header): header("印刷前チェック", caption: model.job?.source?.originalDisplayName)
+        case (.prepare, .footer): caption(L("書類はこの端末内で処理されます"))
+        case (.report, .header): header(L("印刷前チェック"), caption: model.job?.source?.originalDisplayName)
         case (.report, .status): reportStatus
         case (.report, .primaryContent): reportContent
         case (.report, .footer): copierFooter
-        case (.fix, .header): header("適用する修正", caption: "元のPDFは変更されません。")
+        case (.fix, .header): header(L("適用する修正"), caption: L("元のPDFは変更されません。"))
         case (.fix, .primaryContent): fixesContent
-        case (.preview, .header): header("実寸プレビュー", caption: "用紙の内側まで確認してください。")
+        case (.preview, .header): header(L("実寸プレビュー"), caption: L("用紙の内側まで確認してください。"))
         case (.preview, .primaryContent): previewContent
-        case (.preview, .footer): caption("実際の仕上がりは店頭のコピー機でも確認してください。")
-        case (.method, .header): header("どの方法で印刷しますか？", caption: nil)
+        case (.preview, .footer): caption(L("実際の仕上がりは店頭のコピー機でも確認してください。"))
+        case (.method, .header): header(L("どの方法で印刷しますか？"), caption: nil)
         case (.method, .primaryContent): methodsContent
-        case (.method, .footer): caption("選んだ方法の条件でもう一度確認します。")
-        case (.result, .header): header("印刷用PDFの準備ができました", caption: nil)
+        case (.method, .footer): caption(L("選んだ方法の条件でもう一度確認します。"))
+        case (.result, .header): header(L("印刷用PDFの準備ができました"), caption: nil)
         case (.result, .status): resultStatus
         case (.result, .primaryContent): resultContent
         case (.result, .footer): copierFooter
-        case (.history, .header): header("履歴", caption: "書類を保持していない項目は、再度ファイルを選んでください。")
+        case (.history, .header): header(L("履歴"), caption: L("書類を保持していない項目は、再度ファイルを選んでください。"))
         case (.history, .primaryContent): historyContent
-        case (.settings, .header): header("設定", caption: nil)
+        case (.settings, .header): header(L("設定"), caption: nil)
         case (.settings, .primaryContent): settingsContent
         default: EmptyView()
         }
@@ -171,25 +173,25 @@ struct PrintMaeRoot: View {
         } else {
             switch model.screen {
             case .prepare:
-                GoodUsePrimaryButton("ファイルを選ぶ") { importing = true }
+                GoodUsePrimaryButton(L("ファイルを選ぶ")) { importing = true }
                     .accessibilityIdentifier("prepare.import")
             case .report:
                 if model.job?.report?.issues.contains(where: { $0.suggestedFix != nil }) == true {
-                    GoodUsePrimaryButton("まとめて自動で整える") { model.reviewFixes() }
+                    GoodUsePrimaryButton(L("まとめて自動で整える")) { model.reviewFixes() }
                 } else {
-                    GoodUsePrimaryButton("実寸プレビューを見る") { model.openPreview() }
+                    GoodUsePrimaryButton(L("実寸プレビューを見る")) { model.openPreview() }
                 }
             case .fix:
-                GoodUsePrimaryButton("この内容で整える") { model.applyRecommendedFixes() }
+                GoodUsePrimaryButton(L("この内容で整える")) { model.applyRecommendedFixes() }
             case .preview:
-                GoodUsePrimaryButton("印刷用PDFを書き出す") {
+                GoodUsePrimaryButton(L("印刷用PDFを書き出す")) {
                     if defaultProfile == ProfileCatalog.genericID { model.screen = .method }
                     else { model.chooseMethod(defaultProfile) }
                 }
             case .method:
-                GoodUsePrimaryButton("この方法で書き出す") { model.export() }
+                GoodUsePrimaryButton(L("この方法で書き出す")) { model.export() }
             case .result:
-                GoodUsePrimaryButton("公式アプリまたはFilesへ共有") { model.openShare() }
+                GoodUsePrimaryButton(L("公式アプリまたはFilesへ共有")) { model.openShare() }
             case .history, .settings: EmptyView()
             }
         }
@@ -214,14 +216,14 @@ struct PrintMaeRoot: View {
                 .font(.system(size: 38, weight: .light))
                 .foregroundStyle(Skin.indigo)
                 .accessibilityHidden(true)
-            Text("PDF・JPEG・PNG・HEIC").font(.headline)
-            Text("ファイルを読み込むと、印刷方法に合うか自動で確認します。")
+            Text(L("PDF・JPEG・PNG・HEIC")).font(.headline)
+            Text(L("ファイルを読み込むと、印刷方法に合うか自動で確認します。"))
                 .font(.body).foregroundStyle(.secondary)
-            GoodUseSecondaryButton("サンプルで試す") { model.trySample() }
+            GoodUseSecondaryButton(L("サンプルで試す")) { model.trySample() }
             if let job = model.job, job.phase != .completed {
                 Divider()
                 Button { model.openHistory(job) } label: {
-                    Label("前回の作業を開く", systemImage: "arrow.uturn.backward")
+                    Label(L("前回の作業を開く"), systemImage: "arrow.uturn.backward")
                         .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                 }
             }
@@ -235,9 +237,9 @@ struct PrintMaeRoot: View {
                 .font(.title2)
                 .foregroundStyle(level == .ready ? .green : level == .review ? .orange : .red)
             VStack(alignment: .leading, spacing: 4) {
-                Text(level == .ready ? "準備完了" : level == .review ? "確認が必要です" : "このままでは書き出せません")
+                Text(level == .ready ? L("準備完了") : level == .review ? L("確認が必要です") : L("このままでは書き出せません"))
                     .font(.headline)
-                Text(level == .ready ? "プレビューで仕上がりを確認してください。" : "問題と対象ページを確認してから整えてください。")
+                Text(level == .ready ? L("プレビューで仕上がりを確認してください。") : L("問題と対象ページを確認してから整えてください。"))
                     .font(.subheadline).foregroundStyle(.secondary)
             }
         }
@@ -248,12 +250,12 @@ struct PrintMaeRoot: View {
         VStack(alignment: .leading, spacing: 18) {
             if let job = model.job, let report = job.report {
                 HStack {
-                    metric(paperName(model.effectivePaper), "用紙")
-                    metric("\(report.pageCount)ページ", "ページ")
-                    metric(ByteCountFormatter.string(fromByteCount: report.inputBytes, countStyle: .file), "ファイル")
+                    metric(paperName(model.effectivePaper), L("用紙"))
+                    metric(String(format: L("%dページ"), report.pageCount), L("ページ"))
+                    metric(formattedBytes(report.inputBytes), L("ファイル"))
                 }
                 Divider()
-                if report.issues.isEmpty { Text("見つかった問題はありません。").font(.subheadline) }
+                if report.issues.isEmpty { Text(L("見つかった問題はありません。")).font(.subheadline) }
                 ForEach(report.issues) { issue in
                     HStack(alignment: .top, spacing: 10) {
                         Image(systemName: issue.severity == .blocking ? "xmark.octagon" : "exclamationmark.triangle")
@@ -262,7 +264,7 @@ struct PrintMaeRoot: View {
                             Text(localizedIssue(issue.titleKey)).font(.headline)
                             Text(localizedIssue(issue.consequenceKey)).font(.subheadline).foregroundStyle(.secondary)
                             if let pages = issue.pages?.indexes, !pages.isEmpty {
-                                Text(pages.map { String($0 + 1) }.joined(separator: "、") + "ページ目")
+                                Text(String(format: L("対象ページ: %@"), pages.map { String($0 + 1) }.joined(separator: uiLanguage == "en" ? ", " : "、")))
                                     .font(.footnote).foregroundStyle(.secondary)
                             }
                         }
@@ -271,7 +273,7 @@ struct PrintMaeRoot: View {
                     Divider()
                 }
                 if report.issues.contains(where: { $0.suggestedFix != nil }) {
-                    Button("自分で調整") { model.openPreview() }.frame(minHeight: 44)
+                    Button(L("自分で調整")) { model.openPreview() }.frame(minHeight: 44)
                 }
             }
         }
@@ -288,16 +290,16 @@ struct PrintMaeRoot: View {
     private var fixesContent: some View {
         VStack(alignment: .leading, spacing: 12) {
             let actions = model.job?.report?.issues.compactMap(\.suggestedFix) ?? []
-            if actions.isEmpty { Text("自動で適用できる修正はありません。") }
+            if actions.isEmpty { Text(L("自動で適用できる修正はありません。")) }
             ForEach(actions.indices, id: \.self) { index in
                 Label(fixName(actions[index]), systemImage: "checkmark")
                     .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
             }
             if actions.contains(where: { if case .flattenForPrint = $0 { return true }; return false }) {
-                Text("レイアウトを安定させるため、リンクやしおりなどの画面用機能を除いた印刷用PDFを作成します。元のPDFは変更されません。")
+                Text(L("レイアウトを安定させるため、リンクやしおりなどの画面用機能を除いた印刷用PDFを作成します。元のPDFは変更されません。"))
                     .font(.footnote).foregroundStyle(.secondary)
             }
-            Button("項目を変更") { model.openPreview() }.frame(minHeight: 44)
+            Button(L("項目を変更")) { model.openPreview() }.frame(minHeight: 44)
         }
     }
 
@@ -314,21 +316,21 @@ struct PrintMaeRoot: View {
 
     private var previewPaperPane: some View {
         VStack(spacing: 12) {
-            Picker("表示", selection: $model.showOriginal) {
-                Text("仕上がり").tag(false)
-                Text("元のファイル").tag(true)
+            Picker(L("表示"), selection: $model.showOriginal) {
+                Text(L("仕上がり")).tag(false)
+                Text(L("元のファイル")).tag(true)
             }
             .pickerStyle(.segmented)
             PDFPaperPreview(url: model.showOriginal ? originalURL : model.previewURL,
                             pageIndex: model.previewPage, paper: model.effectivePaper,
                             showsSafeArea: model.showSafeArea)
             HStack {
-                Button("前のページ") { model.previewPage -= 1 }.disabled(model.previewPage == 0)
+                Button(L("前のページ")) { model.previewPage -= 1 }.disabled(model.previewPage == 0)
                 Spacer()
                 Text("\(model.previewPage + 1) / \(model.showOriginal ? (model.job?.report?.pageCount ?? 1) : model.previewPageCount)")
-                    .monospacedDigit().accessibilityLabel("\(model.previewPage + 1)ページ目")
+                    .monospacedDigit().accessibilityLabel(String(format: L("%dページ目"), model.previewPage + 1))
                 Spacer()
-                Button("次のページ") { model.previewPage += 1 }
+                Button(L("次のページ")) { model.previewPage += 1 }
                     .disabled(model.previewPage + 1 >= (model.showOriginal ? (model.job?.report?.pageCount ?? 1) : model.previewPageCount))
             }
             .frame(minHeight: 44)
@@ -339,15 +341,15 @@ struct PrintMaeRoot: View {
 
     private var previewOptions: some View {
         VStack(alignment: .leading, spacing: 15) {
-            Toggle("印刷の安全範囲", isOn: $model.showSafeArea)
+            Toggle(L("印刷の安全範囲"), isOn: $model.showSafeArea)
             Divider()
             if let job = model.job {
-                Text("\(paperName(model.effectivePaper))｜\(job.report?.pageCount ?? 0)ページ")
+                Text(String(format: L("%@｜%dページ"), paperName(model.effectivePaper), job.report?.pageCount ?? 0))
                     .font(.subheadline).foregroundStyle(.secondary)
             }
-            DisclosureGroup("仕上がりを調整") {
+            DisclosureGroup(L("仕上がりを調整")) {
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("用紙と向き").font(.subheadline.bold())
+                    Text(L("用紙と向き")).font(.subheadline.bold())
                     ForEach(PaperSpec.allCases, id: \.self) { paper in
                         Button {
                             model.apply(.normalizePaper(paper))
@@ -357,14 +359,14 @@ struct PrintMaeRoot: View {
                         }
                     }
                     Divider()
-                    Button("このページを右に90°回転") {
+                    Button(L("このページを右に90°回転")) {
                         model.apply(.rotate(pageIndexes: IndexSet(integer: model.previewPage), quarterTurnsClockwise: 1))
                     }.frame(minHeight: 44)
-                    Button("印刷の安全範囲に収める") {
+                    Button(L("印刷の安全範囲に収める")) {
                         let inset = ProfileCatalog().load(model.selectedMethod).profile.safeInsetMillimetres
                         model.apply(.fitInsideSafeArea(inset))
                     }.frame(minHeight: 44)
-                    Text("余白").font(.subheadline.bold())
+                    Text(L("余白")).font(.subheadline.bold())
                     HStack {
                         Spacer(minLength: 0)
                         ForEach([3.0, 5.0, 10.0], id: \.self) { mm in
@@ -373,21 +375,21 @@ struct PrintMaeRoot: View {
                             }
                         }
                     }.frame(minHeight: 44)
-                    Stepper("カスタム：\(Int(customMargin)) mm", value: $customMargin, in: 0...30, step: 1)
-                    Button("カスタム余白を適用") {
+                    Stepper(String(format: L("カスタム：%d mm"), Int(customMargin)), value: $customMargin, in: 0...30, step: 1)
+                    Button(L("カスタム余白を適用")) {
                         let mm = customMargin
                         model.apply(.addMargins(EdgeInsetsMM(top: mm, leading: mm, bottom: mm, trailing: mm)))
                     }.frame(minHeight: 44)
-                    Button("印刷方法の上限を目標に圧縮") { model.apply(.compress(CompressionPolicy())) }
+                    Button(L("印刷方法の上限を目標に圧縮")) { model.apply(.compress(CompressionPolicy())) }
                         .frame(minHeight: 44)
-                    Button("印刷方法の上限で分割") {
+                    Button(L("印刷方法の上限で分割")) {
                         let profile = ProfileCatalog().load(model.selectedMethod).profile
                         model.apply(.split(maxPages: profile.maxPagesPerFile, maxBytes: profile.maxBytesPerFile))
                     }.frame(minHeight: 44)
                     HStack {
-                        Button("元に戻す") { model.undo() }.disabled(model.job?.undoRecipes.isEmpty != false)
+                        Button(L("元に戻す")) { model.undo() }.disabled(model.job?.undoRecipes.isEmpty != false)
                         Spacer()
-                        Button("やり直す") { model.redo() }.disabled(model.job?.redoRecipes.isEmpty != false)
+                        Button(L("やり直す")) { model.redo() }.disabled(model.job?.redoRecipes.isEmpty != false)
                     }.frame(minHeight: 44)
                 }
                 .buttonStyle(.bordered)
@@ -403,11 +405,11 @@ struct PrintMaeRoot: View {
 
     private var methodsContent: some View {
         VStack(alignment: .leading, spacing: 12) {
-            method("jp.seven.upload.v1", "登録して印刷", "先にファイルを登録し、店頭で呼び出す方法")
-            method("jp.sharp.local.v1", "店頭Wi‑Fiで送る", "コピー機のWi‑Fiに接続して、その場で送る方法")
-            method(ProfileCatalog.genericID, "あとで選ぶ", "10 MB以下の汎用PDFとして保存")
+            method("jp.seven.upload.v1", L("登録して印刷"), L("先にファイルを登録し、店頭で呼び出す方法"))
+            method("jp.sharp.local.v1", L("店頭Wi‑Fiで送る"), L("コピー機のWi‑Fiに接続して、その場で送る方法"))
+            method(ProfileCatalog.genericID, L("あとで選ぶ"), L("10 MB以下の汎用PDFとして保存"))
             if let report = model.job?.report, report.readiness != .ready {
-                Label("\(report.issues.count)点を確認してください", systemImage: "exclamationmark.triangle")
+                Label(String(format: L("%d点を確認してください"), report.issues.count), systemImage: "exclamationmark.triangle")
                     .font(.subheadline).foregroundStyle(.orange)
             }
         }
@@ -433,7 +435,7 @@ struct PrintMaeRoot: View {
     }
 
     private var resultStatus: some View {
-        Label("書き出したPDFを確認しました", systemImage: "checkmark.circle.fill")
+        Label(L("書き出したPDFを確認しました"), systemImage: "checkmark.circle.fill")
             .foregroundStyle(.green)
             .font(.headline)
     }
@@ -441,35 +443,35 @@ struct PrintMaeRoot: View {
     private var resultContent: some View {
         VStack(alignment: .leading, spacing: 16) {
             if let job = model.job, let parts = job.export?.parts {
-                Text("\(parts.count)ファイル｜\(job.report?.pageCount ?? 0)ページ｜\(paperName(model.effectivePaper))")
+                Text(String(format: L("%dファイル｜%dページ｜%@"), parts.count, job.report?.pageCount ?? 0, paperName(model.effectivePaper)))
                     .font(.headline)
                 ForEach(parts.indices, id: \.self) { index in
-                    Label("\(parts.count > 1 ? "パート\(index + 1)・" : "")\(ByteCountFormatter.string(fromByteCount: parts[index].byteCount, countStyle: .file))", systemImage: "doc.text")
+                    Label("\(parts.count > 1 ? String(format: L("パート%d・"), index + 1) : "")\(formattedBytes(parts[index].byteCount))", systemImage: "doc.text")
                         .font(.subheadline)
                 }
-                Label("パスワードなし", systemImage: "lock.open").font(.subheadline)
+                Label(L("パスワードなし"), systemImage: "lock.open").font(.subheadline)
             }
-            Text("共有先で印刷アプリを選び、店頭の最終プレビューを確認してください。")
+            Text(L("共有先で印刷アプリを選び、店頭の最終プレビューを確認してください。"))
                 .font(.subheadline).foregroundStyle(.secondary)
-            Button("ファイルに保存") { model.showFilesPicker = true }
+            Button(L("ファイルに保存")) { model.showFilesPicker = true }
                 .frame(minHeight: 44)
-            Button("完了") { model.finish() }.frame(minHeight: 44)
+            Button(L("完了")) { model.finish() }.frame(minHeight: 44)
         }
     }
 
     private var copierFooter: some View {
-        caption("店頭のコピー機で、最終プレビューと印刷設定を確認してください。")
+        caption(L("店頭のコピー機で、最終プレビューと印刷設定を確認してください。"))
     }
 
     private var historyContent: some View {
         VStack(alignment: .leading, spacing: 0) {
-            if model.jobs.isEmpty { Text("まだ履歴がありません。") }
+            if model.jobs.isEmpty { Text(L("まだ履歴がありません。")) }
             ForEach(model.jobs, id: \.id) { job in
                 Button { model.openHistory(job) } label: {
                     HStack {
                         VStack(alignment: .leading, spacing: 5) {
-                            Text(job.source?.originalDisplayName ?? "書類").font(.body).lineLimit(1)
-                            Text("\(job.updatedAt.formatted(Date.FormatStyle(date: .abbreviated, time: .shortened).locale(Locale(identifier: "ja_JP")))) ・ \(paperName(job.targetPaper))")
+                            Text(job.source?.originalDisplayName ?? L("書類")).font(.body).lineLimit(1)
+                            Text(String(format: L("%@ ・ %@"), job.updatedAt.formatted(Date.FormatStyle(date: .abbreviated, time: .shortened).locale(Locale(identifier: uiLanguage == "en" ? "en_US" : "ja_JP"))), paperName(job.targetPaper)))
                                 .font(.footnote).foregroundStyle(.secondary)
                         }
                         Spacer()
@@ -485,41 +487,45 @@ struct PrintMaeRoot: View {
 
     private var settingsContent: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Picker("既定の用紙", selection: $defaultPaper) {
+            Picker(L("表示言語"), selection: $uiLanguage) {
+                Text("日本語").tag("ja")
+                Text("English").tag("en")
+            }
+            Picker(L("既定の用紙"), selection: $defaultPaper) {
                 Text("A4").tag("a4Portrait")
                 Text("B5").tag("b5Portrait")
             }
-            Picker("既定の印刷方法", selection: $defaultProfile) {
-                Text("あとで選ぶ").tag(ProfileCatalog.genericID)
-                Text("登録して印刷").tag("jp.seven.upload.v1")
-                Text("店頭Wi‑Fiで送る").tag("jp.sharp.local.v1")
+            Picker(L("既定の印刷方法"), selection: $defaultProfile) {
+                Text(L("あとで選ぶ")).tag(ProfileCatalog.genericID)
+                Text(L("登録して印刷")).tag("jp.seven.upload.v1")
+                Text(L("店頭Wi‑Fiで送る")).tag("jp.sharp.local.v1")
             }
-            Picker("作業ファイルの自動削除", selection: $retentionDays) {
-                Text("24時間後").tag(1)
-                Text("書き出し後すぐ").tag(0)
-                Text("7日後").tag(7)
+            Picker(L("作業ファイルの自動削除"), selection: $retentionDays) {
+                Text(L("24時間後")).tag(1)
+                Text(L("書き出し後すぐ")).tag(0)
+                Text(L("7日後")).tag(7)
             }
             Divider()
-            Button("購入を復元") { model.restore() }.frame(minHeight: 44)
-            Button("すべての書類を削除", role: .destructive) { confirmDelete = true }.frame(minHeight: 44)
-            Link("プライバシー", destination: URL(string: "https://lrodeveloperr.github.io/Printmae-ios/privacy/")!)
+            Button(L("購入を復元")) { model.restore() }.frame(minHeight: 44)
+            Button(L("すべての書類を削除"), role: .destructive) { confirmDelete = true }.frame(minHeight: 44)
+            Link(L("プライバシー"), destination: URL(string: "https://lrodeveloperr.github.io/Printmae-ios/privacy/")!)
                 .frame(minHeight: 44)
-            Link("使い方・お問い合わせ", destination: URL(string: "https://lrodeveloperr.github.io/Printmae-ios/")!)
+            Link(L("使い方・お問い合わせ"), destination: URL(string: "https://lrodeveloperr.github.io/Printmae-ios/")!)
                 .frame(minHeight: 44)
-            Text("印刷条件の確認日：2026年9月25日").font(.footnote).foregroundStyle(.secondary)
-            Text("バージョン \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1")")
+            Text(L("印刷条件の確認日：2026年9月25日")).font(.footnote).foregroundStyle(.secondary)
+            Text(String(format: L("バージョン %@"), Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1"))
                 .font(.footnote).foregroundStyle(.secondary)
         }
     }
 
     private var passwordSheet: some View {
         VStack(alignment: .leading, spacing: 18) {
-            Text("PDFのパスワード").font(.title2.bold())
-            Text("このPDFを開くためにパスワードを入力してください。パスワードは保存されません。")
-            SecureField("PDFのパスワード", text: $password).textContentType(.password)
+            Text(L("PDFのパスワード")).font(.title2.bold())
+            Text(L("このPDFを開くためにパスワードを入力してください。パスワードは保存されません。"))
+            SecureField(L("PDFのパスワード"), text: $password).textContentType(.password)
                 .textFieldStyle(.roundedBorder)
-            GoodUsePrimaryButton("開く") { model.unlock(password); password = "" }
-            Button("キャンセル") { password = ""; model.showPassword = false }
+            GoodUsePrimaryButton(L("開く")) { model.unlock(password); password = "" }
+            Button(L("キャンセル")) { password = ""; model.showPassword = false }
         }
         .padding(24)
         .presentationDetents([.medium])
@@ -534,13 +540,13 @@ struct PrintMaeRoot: View {
                 .onMove { from, to in pendingImages.move(fromOffsets: from, toOffset: to) }
             }
             .environment(\.editMode, .constant(.active))
-            .navigationTitle("画像の順番")
+            .navigationTitle(L("画像の順番"))
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("キャンセル") { orderingImages = false; pendingImages = [] }
+                    Button(L("キャンセル")) { orderingImages = false; pendingImages = [] }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("この順番で読み込む") {
+                    Button(L("この順番で読み込む")) {
                         let selected = pendingImages
                         orderingImages = false
                         pendingImages = []
@@ -553,47 +559,51 @@ struct PrintMaeRoot: View {
 
     private var paywall: some View {
         VStack(alignment: .leading, spacing: 18) {
-            Text("書き出しの準備ができました").font(.subheadline).foregroundStyle(.secondary)
-            Text("プリント前 Proを買い切りで利用").font(.title2.bold())
-            Label("印刷用PDFを何度でも書き出し", systemImage: "checkmark")
-            Label("自動調整・圧縮・分割を制限なく利用", systemImage: "checkmark")
-            Label("広告なし・サブスクリプションなし", systemImage: "checkmark")
+            Text(L("書き出しの準備ができました")).font(.subheadline).foregroundStyle(.secondary)
+            Text(L("プリント前 Proを買い切りで利用")).font(.title2.bold())
+            Label(L("印刷用PDFを何度でも書き出し"), systemImage: "checkmark")
+            Label(L("自動調整・圧縮・分割を制限なく利用"), systemImage: "checkmark")
+            Label(L("広告なし・サブスクリプションなし"), systemImage: "checkmark")
             if let price = model.productPrice {
-                GoodUsePrimaryButton("買い切りでProにする — \(price)") { model.buy() }
+                GoodUsePrimaryButton(String(format: L("買い切りでProにする — %@"), price)) { model.buy() }
             } else {
-                GoodUseSecondaryButton("価格を再読み込み") { Task { await model.loadPrice() } }
+                GoodUseSecondaryButton(L("価格を再読み込み")) { Task { await model.loadPrice() } }
             }
-            Button("購入を復元") { model.restore() }.frame(minHeight: 44)
-            Button("今はしない") { model.showPaywall = false }.frame(minHeight: 44)
-            Text("お支払いはApple IDに請求されます。").font(.footnote).foregroundStyle(.secondary)
+            Button(L("購入を復元")) { model.restore() }.frame(minHeight: 44)
+            Button(L("今はしない")) { model.showPaywall = false }.frame(minHeight: 44)
+            Text(L("お支払いはApple IDに請求されます。")).font(.footnote).foregroundStyle(.secondary)
         }
         .padding(24)
         .presentationDetents([.medium, .large])
     }
 
-    private func localizedIssue(_ key: String) -> String {
-        NSLocalizedString(key, comment: "")
+    private func localizedIssue(_ key: String) -> String { L(key) }
+
+    private func formattedBytes(_ count: Int64) -> String {
+        let formatter = ByteCountFormatter()
+        formatter.countStyle = .file
+        return formatter.string(fromByteCount: count)
     }
 
     private func paperName(_ paper: PaperSpec) -> String {
         switch paper {
-        case .a4Portrait: "A4・縦"
-        case .a4Landscape: "A4・横"
-        case .b5Portrait: "B5・縦"
-        case .b5Landscape: "B5・横"
+        case .a4Portrait: L("A4・縦")
+        case .a4Landscape: L("A4・横")
+        case .b5Portrait: L("B5・縦")
+        case .b5Landscape: L("B5・横")
         }
     }
 
     private func fixName(_ action: FixAction) -> String {
         switch action {
-        case .unlock: "パスワードを解除"
-        case .rotate: "ページの向きを整える"
-        case .normalizePaper(let paper): "用紙を\(paperName(paper))に統一"
-        case .fitInsideSafeArea: "印刷の安全範囲に収める"
-        case .addMargins: "白い余白を追加"
-        case .compress: "ファイルを圧縮"
-        case .split: "ページごとに分割"
-        case .flattenForPrint: "印刷用PDFに変換"
+        case .unlock: L("パスワードを解除")
+        case .rotate: L("ページの向きを整える")
+        case .normalizePaper(let paper): String(format: L("用紙を%@に統一"), paperName(paper))
+        case .fitInsideSafeArea: L("印刷の安全範囲に収める")
+        case .addMargins: L("白い余白を追加")
+        case .compress: L("ファイルを圧縮")
+        case .split: L("ページごとに分割")
+        case .flattenForPrint: L("印刷用PDFに変換")
         }
     }
 }
@@ -618,7 +628,7 @@ private struct PDFPaperPreview: View {
                     Image(uiImage: page.thumbnail(of: CGSize(width: 900, height: 1200), for: .mediaBox))
                         .resizable().scaledToFit()
                 } else {
-                    Text("プレビューを表示できません").foregroundStyle(.secondary)
+                    Text(L("プレビューを表示できません")).foregroundStyle(.secondary)
                 }
                 if showsSafeArea {
                     Rectangle().strokeBorder(Skin.indigo.opacity(0.7), style: StrokeStyle(lineWidth: 1, dash: [5, 4]))
@@ -634,15 +644,15 @@ private struct PDFPaperPreview: View {
             .frame(maxWidth: .infinity)
         }
         .frame(height: min(UIScreen.main.bounds.width - 32, 600) / ratio)
-        .accessibilityLabel("\(paperLabel)の\(pageIndex + 1)ページ目のプレビュー")
+        .accessibilityLabel(String(format: L("%@の%dページ目のプレビュー"), paperLabel, pageIndex + 1))
     }
 
     private var paperLabel: String {
         switch paper {
-        case .a4Portrait: "A4・縦"
-        case .a4Landscape: "A4・横"
-        case .b5Portrait: "B5・縦"
-        case .b5Landscape: "B5・横"
+        case .a4Portrait: L("A4・縦")
+        case .a4Landscape: L("A4・横")
+        case .b5Portrait: L("B5・縦")
+        case .b5Landscape: L("B5・横")
         }
     }
 }

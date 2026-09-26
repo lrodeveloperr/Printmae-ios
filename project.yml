@@ -15,6 +15,7 @@ targets:
     sources:
       - path: App/PrintMaeApp.swift
       - path: App/PrintMaeModel.swift
+      - path: App/PrintMaeLocalization.swift
       - path: App/Resources
     dependencies:
       - package: GoodUseShell
