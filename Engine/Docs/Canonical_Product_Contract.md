@@ -1269,7 +1269,7 @@ content_rights: no_third_party_app_supplied_content
 uses_only_standard_apple_encryption: true
 ```
 
-Age rating 4+ and Content Rights No are saved in App Store Connect; Data Not Collected remains drafted but unpublished. Recheck against the signed archive, privacy manifest, SDK inventory, shell, policies, and live App Store Connect record before release.
+Age rating 4+ and Content Rights No are saved in App Store Connect; Data Not Collected was published on 2026-09-26. Recheck against the signed archive, privacy manifest, SDK inventory, shell, policies, and live App Store Connect record before release.
 
 ---
 
