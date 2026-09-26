@@ -86,7 +86,7 @@ Use a fictional document that genuinely triggers the displayed findings. The bui
 ## Submission gates
 
 - App Review contact and the corrected Japanese version copy are saved in App Store Connect. Keep personal contact details in App Store Connect rather than this public repository.
-- Remove the accidental English (U.S.) App Store version, name/subtitle, and Pro purchase localizations. They were added after misreading "English as a control layer" and are not intended for the public listing.
+- The accidental English (U.S.) App Store version, name/subtitle, and Pro purchase localizations were removed. Japanese is the sole storefront localization; the Settings picker retains English only as an in-app navigation control for testing.
 - No native iOS build or authentic iPhone/iPad screenshots have been uploaded. The purchase review screenshot must show the actual paywall.
 - The first native GitHub Actions build cannot resolve the private `Swift-UI-shell-ios` package from the runner. Grant that workflow read access to the package repository before using its build result to capture screenshots.
 - App privacy responses are entered but unpublished; the final Publish dialog asks the account holder to attest to accuracy and legal compliance. Confirm the final binary's data practices before publishing.
