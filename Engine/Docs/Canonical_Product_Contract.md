@@ -4,7 +4,7 @@
 
 **Document date:** 2026-09-25  
 **Market:** Japan  
-**Platform:** iPhone, iOS 17+  
+**Platform:** iPhone and iPad, iOS/iPadOS 17+  
 **Primary UI and App Store language:** Japanese  
 **English in this document:** control translation for the developer/implementing AI  
 **Product status:** `READY TO IMPLEMENT` for the locked launch scope  
@@ -38,7 +38,7 @@ canonical_contract:
   core_promise_en: "Find and repair likely PDF print problems before going to the convenience store."
   platform: iOS
   minimum_os: "17.0"
-  device_family_launch: [iPhone]
+  device_family_launch: [iPhone, iPad]
   territories_launch: [Japan]
   ui_locale_launch: [ja]
   architecture: local_first
@@ -1346,7 +1346,7 @@ These are draft facts. Final answers must be checked against the signed archive,
 | T-ENT-002 | Monetization | Cancelled share, failed export, and same-export retry do not decrement again |
 | T-PRIV-001 | REQ-DATA-003/007 | No file names, page text, passwords, or image bytes appear in logs/network traces |
 | T-LOC-001 | Localization | Every customer string and accessibility label has Japanese content and valid placeholders |
-| T-UI-001 | S01–S11 | Sample file completes the full path on iPhone SE 2nd gen and current 6.9-inch simulator |
+| T-UI-001 | S01–S11 | Sample file completes the full path on iPhone SE 2nd gen, current 6.9-inch simulator, and iPad portrait/landscape |
 
 ### Quality thresholds
 

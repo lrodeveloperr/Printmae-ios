@@ -1,0 +1,56 @@
+name: PrintMaeApp
+options:
+  deploymentTarget:
+    iOS: '17.0'
+packages:
+  GoodUseShell:
+    url: https://github.com/lrodeveloperr/Swift-UI-shell-ios.git
+    revision: 6de35c55a2a3fe57f4f7551d8eabce739ba4cc45
+  PrintMaeEngine:
+    path: Engine
+targets:
+  PrintMaeApp:
+    type: application
+    platform: iOS
+    sources:
+      - path: App
+        excludes: [Resources]
+    resources:
+      - path: App/Resources
+    dependencies:
+      - package: GoodUseShell
+        product: GoodUseShell
+      - package: PrintMaeEngine
+        product: PrintMaeEngine
+      - package: PrintMaeEngine
+        product: PrintMaeStoreKit
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.worksbien.printmae
+        SWIFT_VERSION: '5.9'
+        TARGETED_DEVICE_FAMILY: '1,2'
+        INFOPLIST_KEY_CFBundleDisplayName: プリント前
+        INFOPLIST_KEY_LSApplicationQueriesSchemes: []
+        INFOPLIST_KEY_UISupportsDocumentBrowser: NO
+        INFOPLIST_KEY_UIApplicationSupportsDocumentBrowser: NO
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: UIInterfaceOrientationPortrait
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        DEVELOPMENT_LANGUAGE: ja
+        CODE_SIGN_STYLE: Automatic
+        SWIFT_STRICT_CONCURRENCY: targeted
+    info:
+      path: App/Info.plist
+      properties:
+        CFBundleDevelopmentRegion: ja
+        CFBundleDocumentTypes:
+          - CFBundleTypeName: PDF
+            LSItemContentTypes: [com.adobe.pdf]
+            LSHandlerRank: Alternate
+          - CFBundleTypeName: Images
+            LSItemContentTypes: [public.jpeg, public.png, public.heic]
+            LSHandlerRank: Alternate
+        LSSupportsOpeningDocumentsInPlace: false
+        UIFileSharingEnabled: false
+        UISupportsDocumentBrowser: false
+        UIApplicationSupportsDocumentBrowser: false

@@ -88,6 +88,18 @@ public actor FileJobRepository: JobRepository {
         return recovered
     }
 
+    /// Metadata only. The UI must check whether a working copy still exists
+    /// before offering to reopen a completed entry.
+    public func history() async throws -> [PrintJobSnapshot] {
+        try fileManager.contentsOfDirectory(at: jobsRoot, includingPropertiesForKeys: nil)
+            .filter { $0.pathExtension == "json" }
+            .compactMap { url in
+                guard let data = try? Data(contentsOf: url) else { return nil }
+                return try? ISO8601Milliseconds.decoder().decode(PrintJobSnapshot.self, from: data)
+            }
+            .sorted { $0.updatedAt > $1.updatedAt }
+    }
+
     public func stagedDocument(for id: UUID) async throws -> StagedDocument {
         let job = try await require(id)
         guard let descriptor = job.source,

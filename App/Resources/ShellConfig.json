@@ -1,0 +1,23 @@
+{
+  "contractVersion":"1.0.0","appId":"com.worksbien.printmae","shellMode":"FOCUSED_TASK",
+  "theme":{
+    "light":{"canvas":"#F2F4F8","surface":"#FFFFFF","surfaceRaised":"#FFFFFF","primary":"#304B91","onPrimary":"#FFFFFF","textPrimary":"#19233A","textSecondary":"#5C6678","border":"#D8DFEB","success":"#237653","warning":"#926500","error":"#B52C3A"},
+    "dark":{"canvas":"#131923","surface":"#1D2735","surfaceRaised":"#263244","primary":"#A8BBFF","onPrimary":"#17224A","textPrimary":"#F5F7FC","textSecondary":"#B6C0D3","border":"#3C4A60","success":"#71D4A6","warning":"#F2C975","error":"#FF9AA5"},
+    "defaultAppearance":"SYSTEM","spacing":{"xxs":4,"xs":8,"small":12,"medium":16,"large":24,"xl":32},"radius":{"small":8,"medium":12,"large":18},
+    "typography":{"display":{"size":28,"lineHeight":34,"weight":"BOLD"},"title":{"size":21,"lineHeight":27,"weight":"SEMIBOLD"},"body":{"size":16,"lineHeight":23,"weight":"REGULAR"},"label":{"size":15,"lineHeight":21,"weight":"MEDIUM"},"metric":{"size":24,"lineHeight":30,"weight":"BOLD"}},
+    "depth":"FLAT","motion":"MINIMAL"
+  },
+  "layout":{"compactGutter":16,"regularGutter":24,"maxContentWidth":960,"density":"COMFORTABLE","primaryActionPlacement":"BOTTOM_SAFE","wideMode":"TWO_COLUMN"},
+  "navigation":{"startRoute":"prepare","destinations":[{"route":"prepare","labelKey":"プリント前","iconKey":"home"}]},
+  "adRail":{"enabled":false,"reserveSpaceWhenEmpty":false},
+  "screens":[
+    {"id":"prepare","route":"prepare","kind":"WORKBENCH","composition":"STACK","scroll":"VERTICAL","sections":[{"slot":"HEADER","presentation":"PLAIN"},{"slot":"PRIMARY_CONTENT","presentation":"SURFACE"},{"slot":"FOOTER","presentation":"PLAIN"}]},
+    {"id":"report","route":"prepare","kind":"DETAIL","composition":"STACK","scroll":"VERTICAL","sections":[{"slot":"HEADER","presentation":"PLAIN"},{"slot":"STATUS","presentation":"SURFACE"},{"slot":"PRIMARY_CONTENT","presentation":"PLAIN"},{"slot":"FOOTER","presentation":"PLAIN"}]},
+    {"id":"fix","route":"prepare","kind":"DETAIL","composition":"LIST","scroll":"VERTICAL","sections":[{"slot":"HEADER","presentation":"PLAIN"},{"slot":"PRIMARY_CONTENT","presentation":"SURFACE"}]},
+    {"id":"preview","route":"prepare","kind":"WORKBENCH","composition":"STACK","scroll":"VERTICAL","sections":[{"slot":"HEADER","presentation":"PLAIN"},{"slot":"PRIMARY_CONTENT","presentation":"PLAIN"},{"slot":"FOOTER","presentation":"PLAIN"}]},
+    {"id":"method","route":"prepare","kind":"FORM","composition":"LIST","scroll":"VERTICAL","sections":[{"slot":"HEADER","presentation":"PLAIN"},{"slot":"PRIMARY_CONTENT","presentation":"PLAIN"},{"slot":"FOOTER","presentation":"PLAIN"}]},
+    {"id":"result","route":"prepare","kind":"DETAIL","composition":"STACK","scroll":"VERTICAL","sections":[{"slot":"HEADER","presentation":"PLAIN"},{"slot":"STATUS","presentation":"SURFACE"},{"slot":"PRIMARY_CONTENT","presentation":"PLAIN"},{"slot":"FOOTER","presentation":"PLAIN"}]},
+    {"id":"history","route":"prepare","kind":"LIST","composition":"LIST","scroll":"VERTICAL","sections":[{"slot":"HEADER","presentation":"PLAIN"},{"slot":"PRIMARY_CONTENT","presentation":"SURFACE"}]},
+    {"id":"settings","route":"prepare","kind":"SETTINGS","composition":"FORM","scroll":"VERTICAL","sections":[{"slot":"HEADER","presentation":"PLAIN"},{"slot":"PRIMARY_CONTENT","presentation":"SURFACE"}]}
+  ]
+}
