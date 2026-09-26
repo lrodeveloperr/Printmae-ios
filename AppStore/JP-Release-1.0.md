@@ -89,5 +89,6 @@ Use a fictional document that genuinely triggers the displayed findings. The bui
 - The accidental English (U.S.) App Store version, name/subtitle, and Pro purchase localizations were removed. Japanese is the sole storefront localization; the Settings picker retains English only as an in-app navigation control for testing.
 - No native iOS build or authentic iPhone/iPad screenshots have been uploaded. The purchase review screenshot must show the actual paywall.
 - The first native GitHub Actions build cannot resolve the private `Swift-UI-shell-ios` package from the runner. Grant that workflow read access to the package repository before using its build result to capture screenshots.
-- App privacy responses are entered but unpublished; the final Publish dialog asks the account holder to attest to accuracy and legal compliance. Confirm the final binary's data practices before publishing.
-- Age rating and content rights responses require a verified submission declaration. Accessibility features require a native device audit before claiming support.
+- Age rating (4+) and Content Rights (No) were saved and verified in App Store Connect against the source, policies, and Japanese listing.
+- App privacy is drafted as Data Not Collected but unpublished; the final Publish dialog asks the account holder to attest to accuracy and legal compliance. The signed build remains unverified.
+- Accessibility features require a native device audit before claiming support.
