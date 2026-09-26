@@ -4,7 +4,7 @@
 
 **Document date:** 2026-09-25  
 **Market:** Japan  
-**Platform:** iPhone and iPad, iOS/iPadOS 17+  
+**Platform:** iPhone and iPad, iOS/iPadOS 17+<br>
 **Primary UI and App Store language:** Japanese  
 **English in this document:** control translation for the developer/implementing AI  
 **Product status:** `READY TO IMPLEMENT` for the locked launch scope  
