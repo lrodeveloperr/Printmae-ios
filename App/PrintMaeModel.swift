@@ -193,7 +193,7 @@ final class PrintMaeModel: ObservableObject {
 
     func openPreview() {
         guard let engine, let id = activeID, !isBusy else { return }
-        busyLabel = L("実寸プレビューを準備しています")
+        busyLabel = L("用紙プレビューを準備しています")
         Task {
             do {
                 accept(try await engine.preparePreview(jobID: id))
